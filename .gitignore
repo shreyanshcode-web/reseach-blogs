@@ -1,0 +1,22 @@
+# macOS metadata
+._*
+.DS_Store
+__MACOSX/
+
+# Node
+node_modules/
+dist/
+.env
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+venv/
+*.egg-info/
+
+# DB
+*.db
+*.sqlite3
