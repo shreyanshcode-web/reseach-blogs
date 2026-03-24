@@ -5,12 +5,14 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.admin_routes import router as admin_router
 from app.api.analytics_routes import router as analytics_router
+from app.api.ml_training_routes import router as ml_router
 from app.api.moderation_routes import router as moderation_router
 from app.api.post_routes import router as post_router
 from app.api.profile_routes import router as profile_router
 from app.api.user_routes import router as user_router
 from app.core.config import get_settings
 from app.db.database import Base, engine
+from app.db.ml_database import init_ml_db, dispose_ml_db
 import app.models.analytics
 import app.models.image
 import app.models.moderation_log
@@ -22,14 +24,17 @@ settings = get_settings()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Create all tables on startup
+    # Create all main DB tables on startup
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+    # Create separate ML training DB tables
+    await init_ml_db()
     # Initialize ML content moderator
     moderator.load_or_train()
     yield
     # Cleanup on shutdown
     await engine.dispose()
+    await dispose_ml_db()
 
 
 app = FastAPI(
@@ -55,6 +60,7 @@ app.include_router(moderation_router)
 app.include_router(admin_router)
 app.include_router(analytics_router)
 app.include_router(profile_router)
+app.include_router(ml_router)
 
 
 @app.get("/", tags=["Root"])
