@@ -22,6 +22,10 @@ class User(Base):
     is_admin: Mapped[bool] = mapped_column(Boolean, default=False)
     is_suspended: Mapped[bool] = mapped_column(Boolean, default=False)
     suspended_reason: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    moderation_strikes: Mapped[int] = mapped_column(Integer, default=0)
+    banned_until: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
     )

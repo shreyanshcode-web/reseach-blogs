@@ -228,3 +228,106 @@ async def reject_post(
     await db.flush()
     await db.refresh(post)
     return post
+
+
+# ── NSFW Pipeline (local model + strike system) ─────────────────
+
+from datetime import datetime, timezone
+from app.ml.deepai_moderator import check_nsfw, decide, update_strikes
+from app.schemas.image_schema import DeepAIUploadResponse
+
+
+@router.post("/image/upload-check", response_model=DeepAIUploadResponse)
+async def upload_image_with_moderation(
+    file: UploadFile = File(...),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Upload an image and check for NSFW content using the local ML model.
+
+    Decision engine:
+      - score > 0.85 → BLOCK (image saved, user gets a strike)
+      - score > 0.6  → REVIEW (image saved, queued for admin review)
+      - otherwise    → ALLOW (image saved as safe)
+
+    Users with ≥ 3 strikes are auto-banned for 24 hours.
+    """
+    # ── Check if user is currently banned ──
+    if current_user.banned_until and current_user.banned_until > datetime.now(timezone.utc):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"You are temporarily banned until {current_user.banned_until.isoformat()}. "
+                   "Repeated NSFW violations led to this restriction.",
+        )
+
+    if not file.content_type or not file.content_type.startswith("image/"):
+        raise HTTPException(status_code=400, detail="File must be an image.")
+
+    # ── Read image bytes ──
+    image_bytes = await file.read()
+
+    # ── Check NSFW via local model ──
+    try:
+        score = check_nsfw(image_bytes)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"NSFW check error: {e}")
+
+    decision = decide(score)
+
+    # ── Map decision to Image status ──
+    status_map = {"BLOCK": "blocked", "REVIEW": "review", "ALLOW": "safe"}
+    img_status = status_map[decision]
+    is_explicit = decision == "BLOCK"
+
+    # ── Store in DB ──
+    db_image = Image(
+        original_data=image_bytes,
+        blurred_data=None,
+        is_explicit=is_explicit,
+        moderation_score=score,
+        status=img_status,
+        author_id=current_user.id,
+    )
+    db.add(db_image)
+    await db.flush()
+    await db.refresh(db_image)
+
+    # ── Strike system (only on BLOCK) ──
+    strike_info = None
+    if decision == "BLOCK":
+        strike_info = await update_strikes(current_user.id, db)
+
+    return DeepAIUploadResponse(
+        image_id=db_image.id,
+        nsfw_score=score,
+        decision=decision,
+        status=img_status,
+        strikes=strike_info["strikes"] if strike_info else None,
+        banned=strike_info["banned"] if strike_info else None,
+    )
+
+
+@router.get("/image/review", response_model=list[ImageResponse])
+async def list_review_images(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """List all images pending admin review (status='review')."""
+    stmt = select(Image).where(Image.status == "review")
+    result = await db.execute(stmt)
+    images = result.scalars().all()
+
+    return [
+        ImageResponse(
+            id=img.id,
+            is_explicit=img.is_explicit,
+            moderation_score=img.moderation_score,
+            status=img.status,
+            created_at=img.created_at,
+            author_id=img.author_id,
+            view_url=f"/api/moderation/image/{img.id}",
+        )
+        for img in images
+    ]
+

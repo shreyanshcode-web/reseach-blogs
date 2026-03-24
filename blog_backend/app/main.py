@@ -17,6 +17,7 @@ import app.models.analytics
 import app.models.image
 import app.models.moderation_log
 import app.models.user_profile
+import app.models.weekly_top
 from app.ml.content_moderator import moderator
 
 settings = get_settings()

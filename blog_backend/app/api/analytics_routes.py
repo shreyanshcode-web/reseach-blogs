@@ -313,3 +313,266 @@ async def get_platform_analytics(
         total_posts=total_posts, views_today=views_today,
         views_this_week=views_this_week,
     )
+
+
+# ── Weekly Top Posts ─────────────────────────────────────────────
+
+from app.models.weekly_top import WeeklyTopPost
+
+
+class WeeklyTopPostResponse(BaseModel):
+    rank: int
+    post_id: int
+    title: str
+    author: str
+    likes: int
+    shares: int
+    bookmarks: int
+    total_views: int
+    engagement_score: float
+    week_start: datetime
+    week_end: datetime
+
+
+class WeeklyTopListResponse(BaseModel):
+    week_start: datetime
+    week_end: datetime
+    computed_at: Optional[datetime] = None
+    posts: List[WeeklyTopPostResponse]
+
+
+@router.post("/weekly-top/compute")
+async def compute_weekly_top_posts(
+    db: AsyncSession = Depends(get_db),
+    _admin: User = Depends(get_admin_user),
+):
+    """
+    Compute and store the top 10 best-performing posts of the current week.
+
+    Engagement score = likes + (shares × 2) + bookmarks + (views × 0.1)
+
+    Call this manually or via a cron job once per week.
+    """
+    now = datetime.now(timezone.utc)
+    # Week starts on Monday
+    week_start = (now - timedelta(days=now.weekday())).replace(
+        hour=0, minute=0, second=0, microsecond=0
+    )
+    week_end = week_start + timedelta(days=7)
+
+    # ── Delete old entries for this week (re-compute) ──
+    from sqlalchemy import delete
+    await db.execute(
+        delete(WeeklyTopPost).where(WeeklyTopPost.week_start == week_start)
+    )
+    await db.flush()
+
+    # ── Get all published, non-suspended posts ──
+    posts_result = await db.execute(
+        select(Post.id, Post.title, Post.author_id).where(
+            and_(
+                Post.published == True,
+                Post.is_suspended == False,
+            )
+        )
+    )
+    all_posts = posts_result.all()
+
+    if not all_posts:
+        return {"detail": "No published posts found", "top_posts": []}
+
+    # ── Aggregate engagement for each post this week ──
+    scored_posts = []
+
+    for post_row in all_posts:
+        pid = post_row.id
+
+        # Count likes this week
+        likes = (await db.execute(
+            select(func.count(Engagement.id)).where(
+                and_(
+                    Engagement.post_id == pid,
+                    Engagement.type == "like",
+                    Engagement.created_at >= week_start,
+                    Engagement.created_at < week_end,
+                )
+            )
+        )).scalar() or 0
+
+        # Count shares this week
+        shares = (await db.execute(
+            select(func.count(Engagement.id)).where(
+                and_(
+                    Engagement.post_id == pid,
+                    Engagement.type == "share",
+                    Engagement.created_at >= week_start,
+                    Engagement.created_at < week_end,
+                )
+            )
+        )).scalar() or 0
+
+        # Count bookmarks this week
+        bookmarks = (await db.execute(
+            select(func.count(Engagement.id)).where(
+                and_(
+                    Engagement.post_id == pid,
+                    Engagement.type == "bookmark",
+                    Engagement.created_at >= week_start,
+                    Engagement.created_at < week_end,
+                )
+            )
+        )).scalar() or 0
+
+        # Count views this week
+        views = (await db.execute(
+            select(func.count(PageView.id)).where(
+                and_(
+                    PageView.post_id == pid,
+                    PageView.created_at >= week_start,
+                    PageView.created_at < week_end,
+                )
+            )
+        )).scalar() or 0
+
+        # Weighted engagement score
+        score = likes + (shares * 2) + bookmarks + (views * 0.1)
+
+        if score > 0:
+            scored_posts.append({
+                "post_id": pid,
+                "title": post_row.title,
+                "likes": likes,
+                "shares": shares,
+                "bookmarks": bookmarks,
+                "total_views": views,
+                "engagement_score": round(score, 2),
+            })
+
+    # ── Sort by score and take top 10 ──
+    scored_posts.sort(key=lambda x: x["engagement_score"], reverse=True)
+    top_10 = scored_posts[:10]
+
+    # ── Store in DB ──
+    for rank, post_data in enumerate(top_10, start=1):
+        entry = WeeklyTopPost(
+            post_id=post_data["post_id"],
+            week_start=week_start,
+            week_end=week_end,
+            rank=rank,
+            likes=post_data["likes"],
+            shares=post_data["shares"],
+            bookmarks=post_data["bookmarks"],
+            total_views=post_data["total_views"],
+            engagement_score=post_data["engagement_score"],
+        )
+        db.add(entry)
+
+    await db.flush()
+
+    return {
+        "detail": f"Computed top {len(top_10)} posts for week {week_start.date()} → {week_end.date()}",
+        "week_start": week_start.isoformat(),
+        "week_end": week_end.isoformat(),
+        "top_posts": top_10,
+    }
+
+
+@router.get("/weekly-top", response_model=WeeklyTopListResponse)
+async def get_weekly_top_posts(
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Get the best blogs of the current week (public, no auth required).
+    Returns the top posts ranked by engagement score.
+    """
+    now = datetime.now(timezone.utc)
+    week_start = (now - timedelta(days=now.weekday())).replace(
+        hour=0, minute=0, second=0, microsecond=0
+    )
+    week_end = week_start + timedelta(days=7)
+
+    result = await db.execute(
+        select(WeeklyTopPost)
+        .where(WeeklyTopPost.week_start == week_start)
+        .order_by(WeeklyTopPost.rank)
+    )
+    entries = result.scalars().all()
+
+    posts_response = []
+    for entry in entries:
+        post = await db.get(Post, entry.post_id)
+        if not post:
+            continue
+        author = await db.get(User, post.author_id)
+        posts_response.append(WeeklyTopPostResponse(
+            rank=entry.rank,
+            post_id=entry.post_id,
+            title=post.title,
+            author=author.username if author else "deleted",
+            likes=entry.likes,
+            shares=entry.shares,
+            bookmarks=entry.bookmarks,
+            total_views=entry.total_views,
+            engagement_score=entry.engagement_score,
+            week_start=entry.week_start,
+            week_end=entry.week_end,
+        ))
+
+    return WeeklyTopListResponse(
+        week_start=week_start,
+        week_end=week_end,
+        computed_at=entries[0].computed_at if entries else None,
+        posts=posts_response,
+    )
+
+
+@router.get("/weekly-top/history", response_model=WeeklyTopListResponse)
+async def get_weekly_top_history(
+    week_offset: int = 0,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Get top posts for a specific week. Use week_offset=0 for current week,
+    week_offset=1 for last week, etc.
+    """
+    now = datetime.now(timezone.utc)
+    target = now - timedelta(weeks=week_offset)
+    week_start = (target - timedelta(days=target.weekday())).replace(
+        hour=0, minute=0, second=0, microsecond=0
+    )
+    week_end = week_start + timedelta(days=7)
+
+    result = await db.execute(
+        select(WeeklyTopPost)
+        .where(WeeklyTopPost.week_start == week_start)
+        .order_by(WeeklyTopPost.rank)
+    )
+    entries = result.scalars().all()
+
+    posts_response = []
+    for entry in entries:
+        post = await db.get(Post, entry.post_id)
+        if not post:
+            continue
+        author = await db.get(User, post.author_id)
+        posts_response.append(WeeklyTopPostResponse(
+            rank=entry.rank,
+            post_id=entry.post_id,
+            title=post.title,
+            author=author.username if author else "deleted",
+            likes=entry.likes,
+            shares=entry.shares,
+            bookmarks=entry.bookmarks,
+            total_views=entry.total_views,
+            engagement_score=entry.engagement_score,
+            week_start=entry.week_start,
+            week_end=entry.week_end,
+        ))
+
+    return WeeklyTopListResponse(
+        week_start=week_start,
+        week_end=week_end,
+        computed_at=entries[0].computed_at if entries else None,
+        posts=posts_response,
+    )
+

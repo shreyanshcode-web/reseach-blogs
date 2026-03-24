@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Optional
 from pydantic import BaseModel
 
 class ImageResponse(BaseModel):
@@ -11,3 +12,13 @@ class ImageResponse(BaseModel):
     view_url: str
 
     model_config = {"from_attributes": True}
+
+
+class DeepAIUploadResponse(BaseModel):
+    image_id: int
+    nsfw_score: float
+    decision: str
+    status: str
+    strikes: Optional[int] = None
+    banned: Optional[bool] = None
+
