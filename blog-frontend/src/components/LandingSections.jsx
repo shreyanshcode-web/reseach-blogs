@@ -1,9 +1,6 @@
-import { useState, useEffect, useRef } from "react";
+import { useRef } from "react";
 import { motion, useInView } from "framer-motion";
-import heroBg from "./assets/hero-bg.mp4";
-import "./styles.css";
-
-const API = import.meta.env.VITE_API_URL || "http://localhost:8001";
+import "../styles.css";
 
 function fmtDate(iso) {
   if (!iso) return "";
@@ -14,89 +11,8 @@ function cut(t, n = 130) {
   return t.length > n ? t.slice(0, n) + "..." : t;
 }
 
-export default function App() {
-  const [posts, setPosts] = useState([]);
-  const [scrolled, setScrolled] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
-
-  useEffect(() => {
-    fetch(`${API}/api/posts/?limit=9`)
-      .then(r => r.json()).then(d => setPosts(Array.isArray(d) ? d : [])).catch(() => { });
-  }, []);
-
-  useEffect(() => {
-    const fn = () => setScrolled(window.scrollY > 50);
-    window.addEventListener("scroll", fn);
-    return () => window.removeEventListener("scroll", fn);
-  }, []);
-
-  return (
-    <div className="site">
-      <nav className={scrolled ? "nav nav--solid" : "nav"}>
-        <a href="#" className="logo">The Making<span>.</span>Of</a>
-        <div className={menuOpen ? "nav-links open" : "nav-links"}>
-          <a href="#stories" onClick={() => setMenuOpen(false)}>Stories</a>
-          <a href="#topics" onClick={() => setMenuOpen(false)}>Topics</a>
-          <a href="#" onClick={() => setMenuOpen(false)}>About</a>
-          <a href="#" className="nav-cta" onClick={() => setMenuOpen(false)}>Write</a>
-        </div>
-        <button className="burger" onClick={() => setMenuOpen(o => !o)} aria-label="menu">
-          <span className={menuOpen ? "open" : ""} />
-          <span className={menuOpen ? "open" : ""} />
-          <span className={menuOpen ? "open" : ""} />
-        </button>
-      </nav>
-
-      <Hero />
-      <Ticker />
-      <Latest posts={posts} />
-      <Manifesto />
-      <MakingOf posts={posts} />
-      <Topics />
-      <Footer />
-    </div>
-  );
-}
-
-function Hero() {
-  const ref = useRef();
-  const inView = useInView(ref, { once: true });
-  return (
-    <section className="hero" ref={ref}>
-      <video className="hero-vid" src={heroBg} autoPlay loop muted playsInline />
-      <div className="hero-overlay" />
-      <div className="hero-body">
-        <motion.p className="eyebrow"
-          initial={{ opacity: 0, y: 12 }} animate={inView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.6 }}>
-          A blog about ideas that matter
-        </motion.p>
-        <motion.h1 className="hero-title"
-          initial={{ opacity: 0, y: 28 }} animate={inView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.8, delay: 0.1 }}>
-          We are<br /><em>decoding</em><br />meanings.
-        </motion.h1>
-        <motion.p className="hero-sub"
-          initial={{ opacity: 0, y: 20 }} animate={inView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.7, delay: 0.2 }}>
-          Stories, essays, and deep dives at the intersection of technology, culture, and human experience.
-        </motion.p>
-        <motion.div
-          initial={{ opacity: 0, y: 16 }} animate={inView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.7, delay: 0.3 }}>
-          <a href="#stories" className="btn">Read the stories</a>
-        </motion.div>
-      </div>
-      <div className="scroll-hint">
-        <span>Scroll</span>
-        <div className="scroll-line" />
-      </div>
-    </section>
-  );
-}
-
 const TICKER = ["Technology", "Culture", "Design", "Science", "Society", "Ideas", "Research", "Writing"];
-function Ticker() {
+export function Ticker() {
   const items = [...TICKER, ...TICKER];
   return (
     <div className="ticker">
@@ -109,7 +25,7 @@ function Ticker() {
   );
 }
 
-function Latest({ posts }) {
+export function LatestStories({ posts }) {
   const ref = useRef();
   const inView = useInView(ref, { once: true, margin: "-60px" });
   const hero = posts[0];
@@ -163,7 +79,7 @@ const MLINES = [
   { t: "Ideas deserve space.", a: false },
   { t: "This is that space.", a: true },
 ];
-function Manifesto() {
+export function Manifesto() {
   return (
     <section className="manifesto">
       {MLINES.map((l, i) => <MLine key={i} text={l.t} accent={l.a} />)}
@@ -184,7 +100,7 @@ function MLine({ text, accent }) {
   );
 }
 
-function MakingOf({ posts }) {
+export function MakingOf({ posts }) {
   const ref = useRef();
   const inView = useInView(ref, { once: true, margin: "-60px" });
   return (
@@ -216,14 +132,14 @@ function MakingOf({ posts }) {
   );
 }
 
-const TOPICS = [
+const TOPICS_LIST = [
   ["01", "Technology", "Engineering"],
   ["02", "Design & Art", "Creative"],
   ["03", "Science", "Research"],
   ["04", "Culture", "Society"],
   ["05", "Philosophy", "Thought"],
 ];
-function Topics() {
+export function Topics() {
   const ref = useRef();
   const inView = useInView(ref, { once: true, margin: "-60px" });
   return (
@@ -232,7 +148,7 @@ function Topics() {
         initial={{ opacity: 0 }} animate={inView ? { opacity: 1 } : {}}
         transition={{ duration: 0.5 }}>Explore Topics</motion.p>
       <ul>
-        {TOPICS.map(([n, l, t], i) => (
+        {TOPICS_LIST.map(([n, l, t], i) => (
           <motion.li key={n}
             initial={{ opacity: 0, y: 14 }} animate={inView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.5, delay: i * 0.07 }}>
@@ -246,36 +162,5 @@ function Topics() {
         ))}
       </ul>
     </section>
-  );
-}
-
-function Footer() {
-  return (
-    <footer className="footer">
-      <div className="footer-inner">
-        <div className="footer-brand">
-          <p className="logo" style={{ color: "#fff" }}>The Making<span style={{ color: "#e8001d" }}>.</span>Of</p>
-          <p className="footer-desc">A blog about ideas that matter.</p>
-        </div>
-        <div className="footer-cols">
-          <div>
-            <p className="fcol-head">Navigate</p>
-            <a href="#">Stories</a><a href="#">Topics</a><a href="#">About</a>
-          </div>
-          <div>
-            <p className="fcol-head">Connect</p>
-            <a href="#">Twitter</a><a href="#">GitHub</a><a href="#">RSS</a>
-          </div>
-          <div>
-            <p className="fcol-head">Legal</p>
-            <a href="#">Privacy</a><a href="#">Terms</a>
-          </div>
-        </div>
-      </div>
-      <div className="footer-bottom">
-        <p>&copy; 2024 The Making Of. All rights reserved.</p>
-        <a href="#" className="btn btn--sm">Write a story</a>
-      </div>
-    </footer>
   );
 }
