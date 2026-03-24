@@ -10,8 +10,28 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.ml.content_moderator import moderator
 from app.models.post import Post
+from app.models.moderation_log import ModerationLog
 from app.repositories.post_repository import post_repository
+from app.repositories.user_repository import user_repository
 from app.schemas.post_schema import PostCreate, PostUpdate
+
+def extract_text_from_blocks(content) -> str:
+    """Recursively extract plain text from Notion-style JSON blocks."""
+    if isinstance(content, str):
+        return content
+        
+    extracted = []
+    
+    if isinstance(content, dict):
+        if content.get("type") == "text" and "text" in content:
+            extracted.append(content["text"])
+        for val in content.values():
+            extracted.append(extract_text_from_blocks(val))
+    elif isinstance(content, list):
+        for item in content:
+            extracted.append(extract_text_from_blocks(item))
+            
+    return " ".join([text for text in extracted if text.strip()])
 
 
 class PostService:
@@ -20,18 +40,30 @@ class PostService:
         self, db: AsyncSession, data: PostCreate, author_id: int
     ) -> Post:
         # Run content moderation
-        result = moderator.moderate(title=data.title, content=data.content)
+        extracted_content = extract_text_from_blocks(data.content)
+        result = moderator.moderate(title=data.title, content=extracted_content)
 
-        if result.status == "rejected":
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail={
-                    "message": "Your post was rejected by content moderation.",
-                    "reason": result.reason,
-                    "label": result.label,
-                    "confidence": result.confidence,
-                },
+        if result.flagged_keywords:
+            log_entry = ModerationLog(
+                original_text=extracted_content,
+                flagged_keywords=result.flagged_keywords
             )
+            db.add(log_entry)
+            await db.commit()  # Force commit so the log persists despite the incoming exception
+
+        if result.status in ("rejected", "flagged"):
+            author = await user_repository.get_by_id(db, author_id)
+            if author and getattr(author, 'is_verified', False):
+                result.status = "explicit"
+            else:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail={
+                        "message": "Content rejected: Explicit words or false claims detected.",
+                        "flagged_keywords": result.flagged_keywords,
+                        "suggestions": result.suggestions,
+                    },
+                )
 
         post = Post(
             title=data.title,
@@ -43,23 +75,23 @@ class PostService:
         )
         return await post_repository.create(db, post)
 
-    async def get_post(self, db: AsyncSession, post_id: int) -> Post:
+    async def get_post(self, db: AsyncSession, post_id: int, is_authenticated: bool = False) -> Post:
         post = await post_repository.get_by_id(db, post_id)
-        if not post:
+        if not post or (not is_authenticated and post.moderation_status == "explicit"):
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Post not found"
             )
         return post
 
     async def get_all_posts(
-        self, db: AsyncSession, skip: int = 0, limit: int = 100
+        self, db: AsyncSession, skip: int = 0, limit: int = 100, is_authenticated: bool = False
     ) -> Sequence[Post]:
-        return await post_repository.get_all(db, skip=skip, limit=limit)
+        return await post_repository.get_all(db, skip=skip, limit=limit, is_authenticated=is_authenticated)
 
     async def get_posts_by_author(
-        self, db: AsyncSession, author_id: int, skip: int = 0, limit: int = 100
+        self, db: AsyncSession, author_id: int, skip: int = 0, limit: int = 100, is_authenticated: bool = False
     ) -> Sequence[Post]:
-        return await post_repository.get_by_author(db, author_id, skip=skip, limit=limit)
+        return await post_repository.get_by_author(db, author_id, skip=skip, limit=limit, is_authenticated=is_authenticated)
 
     async def update_post(
         self, db: AsyncSession, post_id: int, data: PostUpdate, current_user_id: int
@@ -78,18 +110,30 @@ class PostService:
         new_content = update_data.get("content", post.content)
 
         if "title" in update_data or "content" in update_data:
-            result = moderator.moderate(title=new_title, content=new_content)
+            extracted_new_content = extract_text_from_blocks(new_content)
+            result = moderator.moderate(title=new_title, content=extracted_new_content)
 
-            if result.status == "rejected":
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail={
-                        "message": "Your updated post was rejected by content moderation.",
-                        "reason": result.reason,
-                        "label": result.label,
-                        "confidence": result.confidence,
-                    },
+            if result.flagged_keywords:
+                log_entry_update = ModerationLog(
+                    original_text=extracted_new_content,
+                    flagged_keywords=result.flagged_keywords
                 )
+                db.add(log_entry_update)
+                await db.commit()
+
+            if result.status in ("rejected", "flagged"):
+                author = await user_repository.get_by_id(db, current_user_id)
+                if author and getattr(author, 'is_verified', False):
+                    result.status = "explicit"
+                else:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail={
+                            "message": "Update rejected: Explicit words or false claims detected.",
+                            "flagged_keywords": result.flagged_keywords,
+                            "suggestions": result.suggestions,
+                        },
+                    )
 
             update_data["moderation_status"] = result.status
             update_data["moderation_score"] = result.confidence

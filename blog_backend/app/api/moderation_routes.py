@@ -4,7 +4,7 @@ Moderation API routes – preview check, admin review of flagged posts.
 
 from typing import List
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, File, UploadFile, Response
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -31,6 +31,147 @@ async def check_content(data: ModerationCheckRequest):
         confidence=result.confidence,
         status=result.status,
         reason=result.reason,
+    )
+
+
+from app.models.image import Image
+from app.schemas.image_schema import ImageResponse
+
+
+@router.post("/image", response_model=ImageResponse)
+async def upload_image(
+    file: UploadFile = File(...),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Upload an image, check for NSFW content, and save to database."""
+    if not file.content_type.startswith("image/"):
+        raise HTTPException(status_code=400, detail="File must be an image.")
+        
+    image_bytes = await file.read()
+    
+    try:
+        from app.ml.image_moderator import image_moderator
+        blurred_bytes, is_nsfw, confidence = image_moderator.process_image(image_bytes)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+        
+    status_str = "explicit" if is_nsfw else "safe"
+    blurred_data = blurred_bytes if is_nsfw else None
+    
+    db_image = Image(
+        original_data=image_bytes,
+        blurred_data=blurred_data,
+        is_explicit=is_nsfw,
+        moderation_score=confidence,
+        status=status_str,
+        author_id=current_user.id
+    )
+    db.add(db_image)
+    await db.commit()
+    await db.refresh(db_image)
+    
+    return ImageResponse(
+        id=db_image.id,
+        is_explicit=db_image.is_explicit,
+        moderation_score=db_image.moderation_score,
+        status=db_image.status,
+        created_at=db_image.created_at,
+        author_id=db_image.author_id,
+        view_url=f"/api/moderation/image/{db_image.id}"
+    )
+
+@router.get("/image/{image_id}", response_class=Response)
+async def get_image(image_id: int, db: AsyncSession = Depends(get_db)):
+    """Retrieve an image. Returns blurred version if explicit/appealed."""
+    image = await db.get(Image, image_id)
+    if not image:
+        raise HTTPException(status_code=404, detail="Image not found")
+        
+    if image.status in ("explicit", "appealed") and image.blurred_data:
+        data = image.blurred_data
+    else:
+        data = image.original_data
+        
+    return Response(content=data, media_type="image/jpeg")
+
+@router.post("/image/{image_id}/appeal", response_model=ImageResponse)
+async def appeal_image(
+    image_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Appeal an image that was flagged as explicit."""
+    image = await db.get(Image, image_id)
+    if not image:
+        raise HTTPException(status_code=404, detail="Image not found")
+    if image.author_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized to appeal this image")
+    if image.status != "explicit":
+        raise HTTPException(status_code=400, detail="Only explicit images can be appealed")
+        
+    image.status = "appealed"
+    await db.commit()
+    await db.refresh(image)
+    
+    return ImageResponse(
+        id=image.id,
+        is_explicit=image.is_explicit,
+        moderation_score=image.moderation_score,
+        status=image.status,
+        created_at=image.created_at,
+        author_id=image.author_id,
+        view_url=f"/api/moderation/image/{image.id}"
+    )
+
+@router.get("/image_appeals", response_model=List[ImageResponse])
+async def list_image_appeals(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """List all appealed images (Admin)."""
+    stmt = select(Image).where(Image.status == "appealed")
+    result = await db.execute(stmt)
+    images = result.scalars().all()
+    
+    return [
+        ImageResponse(
+            id=img.id,
+            is_explicit=img.is_explicit,
+            moderation_score=img.moderation_score,
+            status=img.status,
+            created_at=img.created_at,
+            author_id=img.author_id,
+            view_url=f"/api/moderation/image/{img.id}"
+        ) for img in images
+    ]
+
+@router.put("/image/{image_id}/approve", response_model=ImageResponse)
+async def approve_image(
+    image_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Approve an appealed image, clearing the explicit flag (Admin)."""
+    image = await db.get(Image, image_id)
+    if not image:
+        raise HTTPException(status_code=404, detail="Image not found")
+    if image.status != "appealed":
+        raise HTTPException(status_code=400, detail="Image is not currently appealed")
+        
+    image.status = "approved"
+    image.is_explicit = False
+    await db.commit()
+    await db.refresh(image)
+    
+    return ImageResponse(
+        id=image.id,
+        is_explicit=image.is_explicit,
+        moderation_score=image.moderation_score,
+        status=image.status,
+        created_at=image.created_at,
+        author_id=image.author_id,
+        view_url=f"/api/moderation/image/{image.id}"
     )
 
 

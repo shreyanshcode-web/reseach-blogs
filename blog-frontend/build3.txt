@@ -1,0 +1,23 @@
+﻿node.exe : 
+At line:1 char:1
++ & "C:\Program 
+Files\nodejs/node.exe" "C:\Program 
+Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : 
+NotSpeci    fied: (:String) [], 
+RemoteExceptio    n
+    + FullyQualifiedErrorId : 
+NativeCo    mmandError
+ 
+[1m[33mwarn[39m[22m - The 
+`content` option in your Tailwind 
+CSS configuration is missing or 
+empty.
+[1m[33mwarn[39m[22m - Configure 
+your content sources or your 
+generated CSS will be missing styles.
+[1m[33mwarn[39m[22m - https://tai
+lwindcss.com/docs/content-configurati
+on

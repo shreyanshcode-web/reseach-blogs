@@ -6,6 +6,8 @@ import { motion, AnimatePresence, useInView } from "framer-motion";
 import Scene from "./Scene";
 import Loader from "./Loader";
 import Cursor from "./Cursor";
+import CircularGallery from "./components/CircularGallery";
+import BackgroundPlanes from "./components/BackgroundPlanes";
 import "./styles.css";
 
 const fadeUp = {
@@ -84,6 +86,7 @@ export default function App() {
           >
             <span className="nav-logo">Studio</span>
             <div className="nav-links">
+              <a href="/create-post">Write</a>
               <a href="#">Work</a>
               <a href="#">About</a>
               <a href="#">Contact</a>
@@ -120,9 +123,11 @@ export default function App() {
         dpr={[1, 2]}
       >
         <color attach="background" args={["#050508"]} />
+        <BackgroundPlanes count={45} />
         <Suspense fallback={<Loader />}>
           <ScrollControls pages={5} damping={0.25}>
             <Scene start={start} />
+            <CircularGallery position={[0, -15, 0]} />
             {visible && <ScrollTicker />}
             <Scroll html style={{ width: "100vw" }}>
               <div
@@ -157,19 +162,10 @@ export default function App() {
                 </section>
 
                 {/* 3 — Work */}
-                <section className="section work-section">
-                  <motion.p className="section-eyebrow" {...fadeUp}>Selected Work</motion.p>
-                  <div className="work-grid">
-                    {WORK.map((w, i) => (
-                      <motion.div className="work-card" key={w.num} {...stagger(i)}>
-                        <div className="work-card-bg" />
-                        <div className="work-card-inner">
-                          <div className="work-card-num">{w.num}</div>
-                          <div className="work-card-title">{w.title}</div>
-                        </div>
-                      </motion.div>
-                    ))}
-                  </div>
+                <section className="section work-section" style={{ pointerEvents: 'none' }}>
+                  <motion.p className="section-eyebrow" style={{ textAlign: 'center', pointerEvents: 'auto' }} {...fadeUp}>Top Blogs of the Day</motion.p>
+                  <motion.p style={{ textAlign: 'center', opacity: 0.5, pointerEvents: 'auto' }} {...fadeUp}>(Drag sideways to spin the infinite gallery)</motion.p>
+                  {/* The 3D CircularGallery is injected beneath this HTML via Canvas */}
                 </section>
 
                 {/* 4 — Capabilities */}

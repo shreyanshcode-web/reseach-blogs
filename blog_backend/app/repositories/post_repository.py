@@ -22,23 +22,27 @@ class PostRepository:
         return result.scalar_one_or_none()
 
     async def get_all(
-        self, db: AsyncSession, skip: int = 0, limit: int = 100
+        self, db: AsyncSession, skip: int = 0, limit: int = 100, is_authenticated: bool = False
     ) -> Sequence[Post]:
-        result = await db.execute(
-            select(Post).options(joinedload(Post.author)).offset(skip).limit(limit)
-        )
+        stmt = select(Post).options(joinedload(Post.author)).offset(skip).limit(limit)
+        if not is_authenticated:
+            stmt = stmt.where(Post.moderation_status != "explicit")
+        result = await db.execute(stmt)
         return result.scalars().unique().all()
 
     async def get_by_author(
-        self, db: AsyncSession, author_id: int, skip: int = 0, limit: int = 100
+        self, db: AsyncSession, author_id: int, skip: int = 0, limit: int = 100, is_authenticated: bool = False
     ) -> Sequence[Post]:
-        result = await db.execute(
+        stmt = (
             select(Post)
             .options(joinedload(Post.author))
             .where(Post.author_id == author_id)
             .offset(skip)
             .limit(limit)
         )
+        if not is_authenticated:
+            stmt = stmt.where(Post.moderation_status != "explicit")
+        result = await db.execute(stmt)
         return result.scalars().unique().all()
 
     async def update(self, db: AsyncSession, post: Post, **kwargs) -> Post:

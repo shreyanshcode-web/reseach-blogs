@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional
+from typing import Optional, Any
 
 from pydantic import BaseModel, Field
 
@@ -8,13 +8,13 @@ from pydantic import BaseModel, Field
 
 class PostCreate(BaseModel):
     title: str = Field(..., min_length=1, max_length=200)
-    content: str = Field(..., min_length=1)
+    content: Any = Field(..., description="Can be text or a Notion-style JSON block array")
     published: bool = False
 
 
 class PostUpdate(BaseModel):
     title: Optional[str] = Field(None, min_length=1, max_length=200)
-    content: Optional[str] = Field(None, min_length=1)
+    content: Optional[Any] = Field(None, description="Can be text or a Notion-style JSON block array")
     published: Optional[bool] = None
 
 
@@ -30,7 +30,7 @@ class AuthorBrief(BaseModel):
 class PostResponse(BaseModel):
     id: int
     title: str
-    content: str
+    content: Any
     published: bool
     moderation_status: str
     moderation_score: float | None = None

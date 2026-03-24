@@ -3,11 +3,18 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.api.admin_routes import router as admin_router
+from app.api.analytics_routes import router as analytics_router
 from app.api.moderation_routes import router as moderation_router
 from app.api.post_routes import router as post_router
+from app.api.profile_routes import router as profile_router
 from app.api.user_routes import router as user_router
 from app.core.config import get_settings
 from app.db.database import Base, engine
+import app.models.analytics
+import app.models.image
+import app.models.moderation_log
+import app.models.user_profile
 from app.ml.content_moderator import moderator
 
 settings = get_settings()
@@ -45,6 +52,9 @@ app.add_middleware(
 app.include_router(user_router)
 app.include_router(post_router)
 app.include_router(moderation_router)
+app.include_router(admin_router)
+app.include_router(analytics_router)
+app.include_router(profile_router)
 
 
 @app.get("/", tags=["Root"])

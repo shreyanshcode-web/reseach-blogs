@@ -8,6 +8,7 @@ class Settings(BaseSettings):
     SECRET_KEY: str = "changeme"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     ALGORITHM: str = "HS256"
+    GEMINI_API_KEY: str = ""
 
     model_config = {"env_file": ".env", "extra": "ignore"}
 

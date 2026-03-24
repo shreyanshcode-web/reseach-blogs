@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.database import get_db
-from app.middleware.auth_middleware import get_current_user
+from app.middleware.auth_middleware import get_current_user, get_current_user_optional
 from app.models.user import User
 from app.schemas.post_schema import PostCreate, PostResponse, PostUpdate
 from app.services.post_service import post_service
@@ -27,15 +27,22 @@ async def list_posts(
     skip: int = 0,
     limit: int = 100,
     db: AsyncSession = Depends(get_db),
+    current_user: User | None = Depends(get_current_user_optional),
 ):
     """List all posts with pagination."""
-    return await post_service.get_all_posts(db, skip=skip, limit=limit)
+    return await post_service.get_all_posts(
+        db, skip=skip, limit=limit, is_authenticated=current_user is not None
+    )
 
 
 @router.get("/{post_id}", response_model=PostResponse)
-async def get_post(post_id: int, db: AsyncSession = Depends(get_db)):
+async def get_post(
+    post_id: int, 
+    db: AsyncSession = Depends(get_db),
+    current_user: User | None = Depends(get_current_user_optional),
+):
     """Get a post by ID."""
-    return await post_service.get_post(db, post_id)
+    return await post_service.get_post(db, post_id, is_authenticated=current_user is not None)
 
 
 @router.put("/{post_id}", response_model=PostResponse)

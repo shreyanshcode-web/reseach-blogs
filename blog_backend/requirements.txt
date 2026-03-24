@@ -12,3 +12,7 @@ email-validator
 scikit-learn
 joblib
 better-profanity
+transformers==4.38.2
+torch==2.2.1
+Pillow==10.2.0
+google-generativeai==0.8.4
