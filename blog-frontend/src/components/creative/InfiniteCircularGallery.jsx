@@ -70,6 +70,7 @@ function GalleryItem({ item, index, total, scroll, viewport, isWriter, inView })
   const meshRef = useRef();
   const matRef = useRef();
   const extra = useRef(0);
+  const time = useRef(Math.random() * 100); // Random start for variety
   
   // Calculate initial positions
   const { width: viewW, height: viewH } = viewport;
@@ -104,7 +105,8 @@ function GalleryItem({ item, index, total, scroll, viewport, isWriter, inView })
 
     // Update shader
     if (matRef.current) {
-      matRef.current.uTime = state.clock.elapsedTime;
+      time.current += state.delta;
+      matRef.current.uTime = time.current;
       matRef.current.uSpeed = Math.abs(scroll.current - scroll.last) * 10;
       matRef.current.uPlaneSizes = [planeW, planeH];
       matRef.current.uViewportSizes = [viewW, viewH];
@@ -195,11 +197,15 @@ function BackgroundPlanes({ scroll, viewport, inView }) {
 function GalleryScene({ items, scroll, isWriter, inView }) {
   const { viewport } = useThree();
   
+  // Sync scroll values (Moved from parent to be inside Canvas context)
+  useFrame(() => {
+    scroll.last = scroll.current;
+    scroll.current = lerp(scroll.current, scroll.target, scroll.ease);
+  });
+
   // Ensure we have enough items for a seamless loop
-  // If total width is too small, the "wrap" logic will show gaps
   const displayItems = useMemo(() => {
     if (items.length === 0) return [];
-    // If we have fewer than 8 items, double them to ensure the viewport is always full
     return items.length < 8 ? [...items, ...items, ...items] : [...items];
   }, [items]);
 
@@ -257,12 +263,6 @@ export default function InfiniteCircularGallery({ items, title, isWriter, inView
       if (container) container.removeEventListener('wheel', handleWheel);
     };
   }, []);
-
-  // Sync scroll values
-  useFrame(() => {
-    scroll.current.last = scroll.current.current;
-    scroll.current.current = lerp(scroll.current.current, scroll.current.target, scroll.current.ease);
-  });
 
   return (
     <div ref={containerRef} className="c-infinite-gallery-container" style={{ width: '100%', height: '100vh', position: 'relative', overflow: 'hidden', background: '#050505' }}>
