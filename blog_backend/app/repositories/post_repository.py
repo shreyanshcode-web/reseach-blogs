@@ -1,6 +1,6 @@
 from typing import Optional, Sequence
 
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 
@@ -22,16 +22,40 @@ class PostRepository:
         return result.scalar_one_or_none()
 
     async def get_all(
-        self, db: AsyncSession, skip: int = 0, limit: int = 100, is_authenticated: bool = False
+        self,
+        db: AsyncSession,
+        skip: int = 0,
+        limit: int = 100,
+        current_user_id: int | None = None,
     ) -> Sequence[Post]:
         stmt = select(Post).options(joinedload(Post.author)).offset(skip).limit(limit)
-        if not is_authenticated:
-            stmt = stmt.where(Post.moderation_status != "explicit")
+        if current_user_id is None:
+            stmt = stmt.where(
+                Post.published.is_(True),
+                Post.is_suspended.is_(False),
+                Post.moderation_status != "explicit",
+            )
+        else:
+            stmt = stmt.where(
+                or_(
+                    Post.published.is_(True),
+                    Post.author_id == current_user_id,
+                ),
+                or_(
+                    Post.is_suspended.is_(False),
+                    Post.author_id == current_user_id,
+                ),
+            )
         result = await db.execute(stmt)
         return result.scalars().unique().all()
 
     async def get_by_author(
-        self, db: AsyncSession, author_id: int, skip: int = 0, limit: int = 100, is_authenticated: bool = False
+        self,
+        db: AsyncSession,
+        author_id: int,
+        skip: int = 0,
+        limit: int = 100,
+        current_user_id: int | None = None,
     ) -> Sequence[Post]:
         stmt = (
             select(Post)
@@ -40,8 +64,12 @@ class PostRepository:
             .offset(skip)
             .limit(limit)
         )
-        if not is_authenticated:
-            stmt = stmt.where(Post.moderation_status != "explicit")
+        if current_user_id is None or current_user_id != author_id:
+            stmt = stmt.where(
+                Post.published.is_(True),
+                Post.is_suspended.is_(False),
+                Post.moderation_status != "explicit",
+            )
         result = await db.execute(stmt)
         return result.scalars().unique().all()
 

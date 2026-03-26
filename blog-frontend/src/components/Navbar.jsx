@@ -1,10 +1,12 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import "../styles.css";
+import { apiRequest, clearAuthToken, getAuthToken } from "../lib/api";
 
 export default function Navbar({ alwaysSolid = false }) {
   const [scrolled, setScrolled] = useState(alwaysSolid);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);
 
   useEffect(() => {
     if (alwaysSolid) return;
@@ -13,6 +15,26 @@ export default function Navbar({ alwaysSolid = false }) {
     return () => window.removeEventListener("scroll", fn);
   }, [alwaysSolid]);
 
+  useEffect(() => {
+    if (!getAuthToken()) {
+      return;
+    }
+
+    apiRequest("/api/users/me")
+      .then(setCurrentUser)
+      .catch(() => {
+        clearAuthToken();
+        setCurrentUser(null);
+      });
+  }, []);
+
+  function handleLogout() {
+    clearAuthToken();
+    setCurrentUser(null);
+    setMenuOpen(false);
+    window.location.href = "/";
+  }
+
   return (
     <nav className={scrolled ? "nav nav--solid" : "nav"}>
       <Link to="/" className="logo">The Making<span>.</span>Of</Link>
@@ -20,8 +42,22 @@ export default function Navbar({ alwaysSolid = false }) {
         <a href="/#stories" onClick={() => setMenuOpen(false)}>Stories</a>
         <a href="/#topics" onClick={() => setMenuOpen(false)}>Topics</a>
         <Link to="/dashboard" onClick={() => setMenuOpen(false)}>Dashboard</Link>
-        <Link to="/hero" onClick={() => setMenuOpen(false)}>Hero</Link>
-        <Link to="/login" className="nav-cta" onClick={() => setMenuOpen(false)}>Log In</Link>
+        <Link to="/create-post" onClick={() => setMenuOpen(false)}>Write</Link>
+        {currentUser ? (
+          <>
+            <span style={{ fontSize: 12, color: "var(--gray)" }}>@{currentUser.username}</span>
+            <button
+              type="button"
+              className="nav-cta"
+              onClick={handleLogout}
+              style={{ border: "none", cursor: "pointer" }}
+            >
+              Log Out
+            </button>
+          </>
+        ) : (
+          <Link to="/login" className="nav-cta" onClick={() => setMenuOpen(false)}>Log In</Link>
+        )}
       </div>
       <button className="burger" onClick={() => setMenuOpen(o => !o)} aria-label="menu">
         <span className={menuOpen ? "open" : ""} />

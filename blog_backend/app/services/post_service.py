@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.ml.content_moderator import moderator
 from app.models.post import Post
 from app.models.moderation_log import ModerationLog
+from app.models.user import User
 from app.repositories.post_repository import post_repository
 from app.repositories.user_repository import user_repository
 from app.schemas.post_schema import PostCreate, PostUpdate
@@ -75,28 +76,70 @@ class PostService:
         )
         return await post_repository.create(db, post)
 
-    async def get_post(self, db: AsyncSession, post_id: int, is_authenticated: bool = False) -> Post:
+    async def get_post(
+        self,
+        db: AsyncSession,
+        post_id: int,
+        current_user: User | None = None,
+    ) -> Post:
         post = await post_repository.get_by_id(db, post_id)
-        if not post or (not is_authenticated and post.moderation_status == "explicit"):
+        if not post:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Post not found"
+            )
+
+        is_owner = current_user is not None and post.author_id == current_user.id
+        is_admin = bool(current_user and current_user.is_admin)
+        can_view_hidden = is_owner or is_admin
+
+        if post.is_suspended and not can_view_hidden:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Post not found"
+            )
+        if not post.published and not can_view_hidden:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Post not found"
+            )
+        if post.moderation_status == "explicit" and not can_view_hidden:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Post not found"
             )
         return post
 
     async def get_all_posts(
-        self, db: AsyncSession, skip: int = 0, limit: int = 100, is_authenticated: bool = False
+        self,
+        db: AsyncSession,
+        skip: int = 0,
+        limit: int = 100,
+        current_user: User | None = None,
     ) -> Sequence[Post]:
-        return await post_repository.get_all(db, skip=skip, limit=limit, is_authenticated=is_authenticated)
+        return await post_repository.get_all(
+            db,
+            skip=skip,
+            limit=limit,
+            current_user_id=current_user.id if current_user else None,
+        )
 
     async def get_posts_by_author(
-        self, db: AsyncSession, author_id: int, skip: int = 0, limit: int = 100, is_authenticated: bool = False
+        self,
+        db: AsyncSession,
+        author_id: int,
+        skip: int = 0,
+        limit: int = 100,
+        current_user: User | None = None,
     ) -> Sequence[Post]:
-        return await post_repository.get_by_author(db, author_id, skip=skip, limit=limit, is_authenticated=is_authenticated)
+        return await post_repository.get_by_author(
+            db,
+            author_id,
+            skip=skip,
+            limit=limit,
+            current_user_id=current_user.id if current_user else None,
+        )
 
     async def update_post(
         self, db: AsyncSession, post_id: int, data: PostUpdate, current_user_id: int
     ) -> Post:
-        post = await self.get_post(db, post_id)
+        post = await self.get_post(db, post_id, current_user=await user_repository.get_by_id(db, current_user_id))
         if post.author_id != current_user_id:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
@@ -145,7 +188,7 @@ class PostService:
     async def delete_post(
         self, db: AsyncSession, post_id: int, current_user_id: int
     ) -> None:
-        post = await self.get_post(db, post_id)
+        post = await self.get_post(db, post_id, current_user=await user_repository.get_by_id(db, current_user_id))
         if post.author_id != current_user_id:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,

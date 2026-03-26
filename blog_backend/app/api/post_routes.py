@@ -31,7 +31,7 @@ async def list_posts(
 ):
     """List all posts with pagination."""
     return await post_service.get_all_posts(
-        db, skip=skip, limit=limit, is_authenticated=current_user is not None
+        db, skip=skip, limit=limit, current_user=current_user
     )
 
 
@@ -42,7 +42,7 @@ async def get_post(
     current_user: User | None = Depends(get_current_user_optional),
 ):
     """Get a post by ID."""
-    return await post_service.get_post(db, post_id, is_authenticated=current_user is not None)
+    return await post_service.get_post(db, post_id, current_user=current_user)
 
 
 @router.put("/{post_id}", response_model=PostResponse)

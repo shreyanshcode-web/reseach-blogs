@@ -8,6 +8,10 @@ from app.models.user import User
 from app.repositories.user_repository import user_repository
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/users/login")
+oauth2_scheme_optional = OAuth2PasswordBearer(
+    tokenUrl="/api/users/login",
+    auto_error=False,
+)
 
 
 async def get_current_user(
@@ -60,7 +64,7 @@ async def get_admin_user(
 
 
 async def get_current_user_optional(
-    token: str | None = Depends(oauth2_scheme),
+    token: str | None = Depends(oauth2_scheme_optional),
     db: AsyncSession = Depends(get_db),
 ) -> User | None:
     if not token:
