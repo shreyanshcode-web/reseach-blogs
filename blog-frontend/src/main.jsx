@@ -8,12 +8,14 @@ import HeroPage from './pages/HeroPage.jsx'
 import CreatePost from './pages/CreatePost.jsx'
 import Login from './pages/Login.jsx'
 import Signup from './pages/Signup.jsx'
+import CreativeLanding from './pages/CreativeLanding.jsx'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<LandingPage />} />
+        <Route path="/creative" element={<CreativeLanding />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/hero" element={<HeroPage />} />
         <Route path="/create-post" element={<CreatePost />} />
