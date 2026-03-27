@@ -4,6 +4,8 @@ import { Image, Text, shaderMaterial } from '@react-three/drei';
 import * as THREE from 'three';
 import NormalizeWheel from 'normalize-wheel';
 
+const DEFAULT_PROFILE_IMAGE = "/From KlickPin CF For Your Processing _ Overlays instagram Motion graphics trends Film texture.gif";
+
 // ── MATH UTILS ───────────────────────────────────────────────────────
 const lerp = (p1, p2, t) => p1 + (p2 - p1) * t;
 const map = (num, min1, max1, min2, max2) => {
@@ -114,7 +116,7 @@ function GalleryItem({ item, index, total, scroll, viewport, isWriter, inView })
   });
 
   const imageUrl = isWriter 
-    ? (item.profile_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${item.username || index}`)
+    ? (item.profile_url || DEFAULT_PROFILE_IMAGE)
     : (item.image_url || `https://picsum.photos/seed/${item.id + 100}/800/600`);
 
   return (

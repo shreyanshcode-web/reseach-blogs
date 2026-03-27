@@ -12,6 +12,7 @@ import {
 import "../styles.css";
 import "../create-post.css";
 import { API_BASE, getAuthToken } from "../lib/api";
+import { useTheme } from "../lib/theme";
 import {
   blogEditorSchema,
   getBlogSlashMenuItems,
@@ -159,6 +160,7 @@ export default function CreatePost() {
   const initialDraftRef = useRef(loadDraft());
   const fileInputRef = useRef(null);
   const coverInputRef = useRef(null);
+  const { isDark, toggleTheme } = useTheme();
   const [form, setForm] = useState(() => getInitialFormState(initialDraftRef.current));
   const [cover, setCover] = useState(() => ({
     image: initialDraftRef.current?.cover?.image || "",
@@ -176,7 +178,6 @@ export default function CreatePost() {
   const [serverId, setServerId] = useState(initialDraftRef.current?.serverId || null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [focusMode, setFocusMode] = useState(false);
-  const [darkMode, setDarkMode] = useState(initialDraftRef.current?.darkMode || false);
   const [authorProfile, setAuthorProfile] = useState(null);
   const [dragState, setDragState] = useState(null);
 
@@ -274,7 +275,6 @@ export default function CreatePost() {
       const storedDraft = {
         ...payload,
         updatedAt: new Date().toISOString(),
-        darkMode,
       };
 
       window.localStorage.setItem(DRAFT_KEY, JSON.stringify(storedDraft));
@@ -283,7 +283,7 @@ export default function CreatePost() {
     }, 700);
 
     return () => window.clearTimeout(timeout);
-  }, [cover, darkMode, editorState, form, serverId]);
+  }, [cover, editorState, form, serverId]);
 
   useEffect(() => {
     if (!dragState) {
@@ -518,7 +518,7 @@ export default function CreatePost() {
     <div
       className={[
         "editor-page",
-        darkMode ? "editor-page--dark" : "",
+        isDark ? "editor-page--dark" : "",
         focusMode ? "editor-page--focus" : "",
       ]
         .filter(Boolean)
@@ -570,11 +570,11 @@ export default function CreatePost() {
                 </div>
                 <button
                   type="button"
-                  className={`editor-switch ${darkMode ? "editor-switch--active" : ""}`}
-                  onClick={() => setDarkMode((current) => !current)}
-                />
+                    className={`editor-switch ${isDark ? "editor-switch--active" : ""}`}
+                    onClick={toggleTheme}
+                  />
+                </div>
               </div>
-            </div>
 
             <h3>Live stats</h3>
             <div className="editor-stat-grid">
@@ -809,7 +809,7 @@ export default function CreatePost() {
                 <div className="editor-workspace">
                   <BlockNoteView
                     editor={editor}
-                    theme={darkMode ? "dark" : "light"}
+                    theme={isDark ? "dark" : "light"}
                     onChange={() => syncEditorState(editor)}
                     formattingToolbar={false}
                     linkToolbar={false}

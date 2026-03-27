@@ -6,6 +6,8 @@ import "../styles.css";
 import { apiRequest, getAuthToken, jsonBody } from "../lib/api";
 import { normalizePosts } from "../lib/posts";
 
+const DEFAULT_PROFILE_IMAGE = "/From KlickPin CF For Your Processing _ Overlays instagram Motion graphics trends Film texture.gif";
+
 function InlineCreatePost({ onPostCreated }) {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
@@ -127,7 +129,7 @@ function PostCard({ post }) {
       }}
     >
       <div style={{ width: 48, height: 48, borderRadius: "50%", background: "var(--border)", flexShrink: 0, overflow: "hidden" }}>
-        <img src={`https://api.dicebear.com/7.x/notionists/svg?seed=${post.id || "new"}`} alt="Avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+        <img src={DEFAULT_PROFILE_IMAGE} alt="Default profile" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
       </div>
       <div style={{ flex: 1 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4, flexWrap: "wrap" }}>

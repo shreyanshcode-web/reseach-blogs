@@ -2,8 +2,10 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import "../styles.css";
 import { apiRequest, clearAuthToken, getAuthToken } from "../lib/api";
+import { useTheme } from "../lib/theme";
 
 export default function Navbar({ alwaysSolid = false }) {
+  const { isDark, toggleTheme } = useTheme();
   const [scrolled, setScrolled] = useState(alwaysSolid);
   const [menuOpen, setMenuOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
@@ -43,6 +45,9 @@ export default function Navbar({ alwaysSolid = false }) {
         <a href="/#topics" onClick={() => setMenuOpen(false)}>Topics</a>
         <Link to="/dashboard" onClick={() => setMenuOpen(false)}>Dashboard</Link>
         <Link to="/create-post" onClick={() => setMenuOpen(false)}>Write</Link>
+        <button type="button" className="theme-toggle" aria-label="Toggle theme" onClick={toggleTheme}>
+          <span>{isDark ? "☀" : "☾"}</span>
+        </button>
         {currentUser ? (
           <>
             <span style={{ fontSize: 12, color: "var(--gray)" }}>@{currentUser.username}</span>

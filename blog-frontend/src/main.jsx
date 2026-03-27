@@ -9,6 +9,9 @@ import CreatePost from './pages/CreatePost.jsx'
 import Login from './pages/Login.jsx'
 import Signup from './pages/Signup.jsx'
 import CreativeLanding from './pages/CreativeLanding.jsx'
+import { initializeTheme } from './lib/theme.js'
+
+initializeTheme()
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
