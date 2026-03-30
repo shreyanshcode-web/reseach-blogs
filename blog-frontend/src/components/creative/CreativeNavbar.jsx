@@ -3,9 +3,12 @@ import { Link } from 'react-router-dom';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
+import { useTheme } from '../../lib/theme';
+
 gsap.registerPlugin(ScrollTrigger);
 
 export default function CreativeNavbar() {
+  const { isDark, toggleTheme } = useTheme();
   const [scrolled, setScrolled] = useState(false);
   const [hidden, setHidden] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -54,7 +57,10 @@ export default function CreativeNavbar() {
         <a href="#c-stories" onClick={() => setMenuOpen(false)}>Stories</a>
         <a href="#c-topics" onClick={() => setMenuOpen(false)}>Topics</a>
         <Link to="/dashboard" onClick={() => setMenuOpen(false)}>Dashboard</Link>
-        <Link to="/" onClick={() => setMenuOpen(false)}>Classic</Link>
+        <Link to="/classic" onClick={() => setMenuOpen(false)}>Classic</Link>
+        <button type="button" className="c-theme-toggle" aria-label="Toggle theme" onClick={toggleTheme}>
+          <span>{isDark ? "☀" : "☾"}</span>
+        </button>
         <Link to="/login" className="c-nav__cta" onClick={() => setMenuOpen(false)}>
           Log In
         </Link>

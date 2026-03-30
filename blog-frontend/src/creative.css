@@ -22,6 +22,40 @@
   --c-transition: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+[data-theme='light'] {
+  --c-bg: #f8f9fa;
+  --c-bg-alt: #ffffff;
+  --c-text: #1a1a1a;
+  --c-text-dim: rgba(26, 26, 26, 0.6);
+  --c-accent: #e8001d;
+  --c-accent-glow: rgba(232, 0, 29, 0.1);
+  --c-glass: rgba(0, 0, 0, 0.04);
+  --c-glass-border: rgba(0, 0, 0, 0.08);
+  --c-glass-hover: rgba(0, 0, 0, 0.06);
+}
+
+.c-theme-toggle {
+  background: none;
+  border: 1px solid var(--c-glass-border);
+  color: var(--c-text);
+  cursor: none;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.3s var(--c-transition);
+  font-size: 16px;
+}
+
+.c-theme-toggle:hover {
+  background: var(--c-glass-hover);
+  border-color: var(--c-accent);
+  color: var(--c-accent);
+  transform: translateY(-2px);
+}
+
 /* ── GLOBAL CREATIVE PAGE ── */
 .c-page {
   background: var(--c-bg);

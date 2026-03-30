@@ -17,8 +17,8 @@ createRoot(document.getElementById('root')).render(
   <StrictMode>
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<LandingPage />} />
-        <Route path="/creative" element={<CreativeLanding />} />
+        <Route path="/" element={<CreativeLanding />} />
+        <Route path="/classic" element={<LandingPage />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/hero" element={<HeroPage />} />
         <Route path="/create-post" element={<CreatePost />} />

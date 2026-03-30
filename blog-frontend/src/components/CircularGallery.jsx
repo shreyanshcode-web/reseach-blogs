@@ -5,6 +5,7 @@ import { Text, shaderMaterial } from '@react-three/drei';
 import { useSpring, a } from '@react-spring/three';
 import { useDrag } from '@use-gesture/react';
 import axios from 'axios';
+import { API_BASE } from '../lib/api';
 
 // 1. We construct the custom Jelly/Bend Shader based on the bizarro original
 const JellyMaterial = shaderMaterial(
@@ -167,7 +168,7 @@ export default function CircularGallery({ position = [0, 0, 0] }) {
   const { viewport } = useThree();
 
   useEffect(() => {
-    axios.get("http://localhost:8000/api/posts?limit=12").then((res) => {
+    axios.get(`${API_BASE}/api/posts?limit=12`).then((res) => {
       // Bizarro usually maps 12 objects to keep the math looking dense
       let fetched = res.data.slice(0, 12);
 

@@ -1,0 +1,28 @@
+services:
+  backend:
+    build:
+      context: ./blog_backend
+    container_name: blog-backend
+    environment:
+      DATABASE_URL: sqlite+aiosqlite:///./data/blog.db
+      ML_DATABASE_URL: sqlite+aiosqlite:///./data/ml_training.db
+      SECRET_KEY: changeme
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+    ports:
+      - "8001:8000"
+    volumes:
+      - blog_backend_data:/app/data
+
+  frontend:
+    build:
+      context: ./blog-frontend
+      args:
+        VITE_API_URL: http://localhost:8001
+    container_name: blog-frontend
+    depends_on:
+      - backend
+    ports:
+      - "5173:80"
+
+volumes:
+  blog_backend_data:
