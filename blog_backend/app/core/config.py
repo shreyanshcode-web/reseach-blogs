@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     ALGORITHM: str = "HS256"
     GEMINI_API_KEY: str = ""
+    MEDIA_ROOT: str = "./media"
 
     model_config = {"env_file": ".env", "extra": "ignore"}
 

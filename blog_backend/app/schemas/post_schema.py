@@ -34,6 +34,12 @@ class PostResponse(BaseModel):
     published: bool
     moderation_status: str
     moderation_score: float | None = None
+    view_count: int = 0
+    unique_view_count: int = 0
+    like_count: int = 0
+    comment_count: int = 0
+    share_count: int = 0
+    bookmark_count: int = 0
     created_at: datetime
     updated_at: datetime
     author_id: int

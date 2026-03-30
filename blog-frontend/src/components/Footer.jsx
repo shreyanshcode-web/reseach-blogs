@@ -26,7 +26,7 @@ export default function Footer() {
       </div>
       <div className="footer-bottom">
         <p>&copy; 2024 The Making Of. All rights reserved.</p>
-        <Link to="/create-post" className="btn btn--sm">Write a story</Link>
+        <Link to="/editor" className="btn btn--sm">Write a story</Link>
       </div>
     </footer>
   );

@@ -530,7 +530,7 @@ export default function CreatePost() {
         </Link>
         <div className="nav-links">
           <Link to="/dashboard">Dashboard</Link>
-          <Link to="/">Home</Link>
+          <Link to="/home">Home</Link>
         </div>
       </nav>
 

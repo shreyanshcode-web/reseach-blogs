@@ -1,0 +1,125 @@
+.ed-page {
+  display: grid;
+  gap: 28px;
+}
+
+.ed-panel {
+  padding: 32px clamp(22px, 4vw, 40px);
+  border-radius: 32px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--c-glass-border);
+  backdrop-filter: blur(20px) saturate(180%);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.22);
+}
+
+.ed-hero {
+  background:
+    radial-gradient(circle at top right, rgba(232, 0, 29, 0.16), transparent 34%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.03));
+}
+
+.ed-kicker {
+  font-family: var(--c-font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  color: var(--c-accent);
+  margin-bottom: 14px;
+}
+
+.ed-headline {
+  font-family: var(--c-font-display);
+  font-size: clamp(42px, 6vw, 84px);
+  line-height: 0.92;
+  letter-spacing: -2px;
+  color: var(--c-text);
+  margin: 0 0 14px;
+}
+
+.ed-subheadline {
+  font-family: var(--c-font-display);
+  font-size: clamp(24px, 3vw, 34px);
+  line-height: 1.02;
+  letter-spacing: -0.8px;
+  color: var(--c-text);
+  margin: 0 0 10px;
+}
+
+.ed-copy {
+  color: var(--c-text-dim);
+  line-height: 1.85;
+  font-size: 16px;
+  max-width: 760px;
+}
+
+.ed-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  color: var(--c-text-dim);
+  font-size: 13px;
+  letter-spacing: 0.3px;
+}
+
+.ed-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.ed-list {
+  display: grid;
+  gap: 18px;
+}
+
+.ed-item {
+  display: block;
+  padding: 26px 0;
+  border-top: 1px solid var(--c-glass-border);
+  text-decoration: none;
+  color: inherit;
+  transition: transform 0.35s var(--c-transition), border-color 0.35s var(--c-transition);
+}
+
+.ed-item:hover {
+  transform: translateX(8px);
+  border-color: rgba(232, 0, 29, 0.24);
+}
+
+.ed-item:first-child {
+  border-top: none;
+  padding-top: 4px;
+}
+
+.ed-reading-column {
+  max-width: 780px;
+}
+
+.ed-reading-body {
+  font-size: clamp(18px, 1.9vw, 22px);
+  line-height: 2;
+  color: var(--c-text);
+  white-space: pre-wrap;
+}
+
+.ed-input {
+  width: 100%;
+  border-radius: 20px;
+  border: 1px solid var(--c-glass-border);
+  background: rgba(255, 255, 255, 0.03);
+  padding: 18px 20px;
+  font-size: 16px;
+  color: var(--c-text);
+  outline: none;
+}
+
+.ed-input:focus {
+  border-color: rgba(232, 0, 29, 0.4);
+  box-shadow: 0 0 0 4px rgba(232, 0, 29, 0.1);
+}
+
+.ed-muted {
+  color: var(--c-text-dim);
+}

@@ -49,7 +49,7 @@ export default function CreativeNavbar() {
 
   return (
     <nav className={navClass} ref={navRef}>
-      <Link to="/creative" className="c-nav__logo">
+      <Link to="/" className="c-nav__logo">
         The Making<span className="c-dot">.</span>Of
       </Link>
 
@@ -61,7 +61,7 @@ export default function CreativeNavbar() {
         <button type="button" className="c-theme-toggle" aria-label="Toggle theme" onClick={toggleTheme}>
           <span>{isDark ? "☀" : "☾"}</span>
         </button>
-        <Link to="/login" className="c-nav__cta" onClick={() => setMenuOpen(false)}>
+        <Link to="/auth/login" className="c-nav__cta" onClick={() => setMenuOpen(false)}>
           Log In
         </Link>
       </div>

@@ -17,6 +17,12 @@ class Post(Base):
         String(20), default="pending", nullable=False
     )
     moderation_score: Mapped[float | None] = mapped_column(Float, nullable=True)
+    view_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False, index=True)
+    unique_view_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    like_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False, index=True)
+    comment_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    share_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    bookmark_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     is_suspended: Mapped[bool] = mapped_column(Boolean, default=False)
     suspended_reason: Mapped[str | None] = mapped_column(String(500), nullable=True)
     created_at: Mapped[datetime] = mapped_column(

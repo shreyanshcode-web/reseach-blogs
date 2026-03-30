@@ -44,7 +44,7 @@ export default function Navbar({ alwaysSolid = false }) {
         <a href="/#stories" onClick={() => setMenuOpen(false)}>Stories</a>
         <a href="/#topics" onClick={() => setMenuOpen(false)}>Topics</a>
         <Link to="/dashboard" onClick={() => setMenuOpen(false)}>Dashboard</Link>
-        <Link to="/create-post" onClick={() => setMenuOpen(false)}>Write</Link>
+        <Link to="/editor" onClick={() => setMenuOpen(false)}>Write</Link>
         <button type="button" className="theme-toggle" aria-label="Toggle theme" onClick={toggleTheme}>
           <span>{isDark ? "☀" : "☾"}</span>
         </button>
@@ -61,7 +61,7 @@ export default function Navbar({ alwaysSolid = false }) {
             </button>
           </>
         ) : (
-          <Link to="/login" className="nav-cta" onClick={() => setMenuOpen(false)}>Log In</Link>
+          <Link to="/auth/login" className="nav-cta" onClick={() => setMenuOpen(false)}>Log In</Link>
         )}
       </div>
       <button className="burger" onClick={() => setMenuOpen(o => !o)} aria-label="menu">

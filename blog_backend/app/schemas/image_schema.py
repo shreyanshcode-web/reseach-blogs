@@ -10,6 +10,10 @@ class ImageResponse(BaseModel):
     created_at: datetime
     author_id: int
     view_url: str
+    mime_type: str | None = None
+    file_size: int | None = None
+    width: int | None = None
+    height: int | None = None
 
     model_config = {"from_attributes": True}
 
@@ -21,4 +25,3 @@ class DeepAIUploadResponse(BaseModel):
     status: str
     strikes: Optional[int] = None
     banned: Optional[bool] = None
-

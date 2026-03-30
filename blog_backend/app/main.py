@@ -11,14 +11,16 @@ from app.api.post_routes import router as post_router
 from app.api.profile_routes import router as profile_router
 from app.api.user_routes import router as user_router
 from app.core.config import get_settings
-from app.db.database import Base, engine
+from app.db.database import Base, engine, run_startup_migrations
 from app.db.ml_database import init_ml_db, dispose_ml_db
 import app.models.analytics
 import app.models.image
 import app.models.moderation_log
+import app.models.post
 import app.models.user_profile
 import app.models.weekly_top
 from app.ml.content_moderator import moderator
+from app.services.media_storage import ensure_media_dirs
 
 settings = get_settings()
 
@@ -28,6 +30,8 @@ async def lifespan(app: FastAPI):
     # Create all main DB tables on startup
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+    await run_startup_migrations()
+    ensure_media_dirs()
     # Create separate ML training DB tables
     await init_ml_db()
     # Initialize ML content moderator

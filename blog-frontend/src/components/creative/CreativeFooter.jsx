@@ -37,7 +37,7 @@ export default function CreativeFooter() {
     <footer className="c-footer" ref={footerRef}>
       <div className="c-footer__inner">
         <div className="c-footer__brand">
-          <Link to="/creative" className="c-nav__logo">
+          <Link to="/" className="c-nav__logo">
             The Making<span className="c-dot">.</span>Of
           </Link>
           <p className="c-footer__desc">
@@ -67,7 +67,7 @@ export default function CreativeFooter() {
       </div>
       <div className="c-footer__bottom">
         <p>&copy; 2024 The Making Of. All rights reserved.</p>
-        <Link to="/create-post" className="c-footer__write-btn">
+        <Link to="/editor" className="c-footer__write-btn">
           Write a story →
         </Link>
       </div>

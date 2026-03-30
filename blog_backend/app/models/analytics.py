@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-from sqlalchemy import DateTime, ForeignKey, Integer, String
+from sqlalchemy import DateTime, ForeignKey, Index, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.database import Base
@@ -25,6 +25,11 @@ class PageView(Base):
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), index=True
     )
 
+    __table_args__ = (
+        Index("ix_page_views_post_created", "post_id", "created_at"),
+        Index("ix_page_views_post_ip", "post_id", "ip_hash"),
+    )
+
 
 class Engagement(Base):
     """Tracks user interactions (like, share, bookmark, comment)."""
@@ -41,5 +46,11 @@ class Engagement(Base):
         String(20), nullable=False, index=True
     )  # like, share, bookmark, comment
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
+        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), index=True
+    )
+
+    __table_args__ = (
+        Index("ix_engagements_post_type", "post_id", "type"),
+        Index("ix_engagements_user_type", "user_id", "type"),
+        Index("ix_engagements_post_created", "post_id", "created_at"),
     )
