@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import "../styles.css";
-import { apiRequest, getAuthToken } from "../lib/api";
+import { apiRequest, getAuthToken } from "../lib/api"; 
 import { getPostCoverImage, normalizePosts } from "../lib/posts";
 
 const EMPTY_LIBRARY = { written_posts: [], liked_posts: [], shared_posts: [] };
