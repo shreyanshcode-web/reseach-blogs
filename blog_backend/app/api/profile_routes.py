@@ -8,6 +8,7 @@ from app.middleware.auth_middleware import get_current_user
 from app.models.post import Post
 from app.models.user import User
 from app.models.user_profile import UserProfile
+from app.services.follow_service import follow_service
 from app.schemas.profile_schema import ProfileResponse, ProfileUpdate, PublicPortfolioResponse
 
 router = APIRouter(prefix="/api/profile", tags=["Profile"])
@@ -31,6 +32,7 @@ async def get_my_profile(
     post_count = (await db.execute(
         select(func.count(Post.id)).where(Post.author_id == user.id)
     )).scalar() or 0
+    followers_count, following_count = await follow_service.get_follow_counts(db, user.id)
 
     return ProfileResponse(
         user_id=user.id,
@@ -55,6 +57,8 @@ async def get_my_profile(
         certifications=profile.certifications if profile else None,
         projects=profile.projects if profile else None,
         total_posts=post_count,
+        followers_count=followers_count,
+        following_count=following_count,
         member_since=user.created_at.isoformat(),
     )
 
@@ -88,6 +92,7 @@ async def update_my_profile(
     post_count = (await db.execute(
         select(func.count(Post.id)).where(Post.author_id == user.id)
     )).scalar() or 0
+    followers_count, following_count = await follow_service.get_follow_counts(db, user.id)
 
     return ProfileResponse(
         user_id=user.id,
@@ -112,6 +117,8 @@ async def update_my_profile(
         certifications=profile.certifications,
         projects=profile.projects,
         total_posts=post_count,
+        followers_count=followers_count,
+        following_count=following_count,
         member_since=user.created_at.isoformat(),
     )
 
@@ -137,6 +144,7 @@ async def get_public_portfolio(
 
     profile = user.profile
     post_count = len([p for p in user.posts if p.published and not p.is_suspended])
+    followers_count, following_count = await follow_service.get_follow_counts(db, user.id)
 
     # Recent published posts (last 5)
     recent = sorted(
@@ -150,6 +158,7 @@ async def get_public_portfolio(
     ]
 
     return PublicPortfolioResponse(
+        user_id=user.id,
         username=user.username,
         display_name=profile.display_name if profile else user.username,
         bio=profile.bio if profile else None,
@@ -169,6 +178,8 @@ async def get_public_portfolio(
         certifications=profile.certifications if profile else None,
         projects=profile.projects if profile else None,
         total_posts=post_count,
+        followers_count=followers_count,
+        following_count=following_count,
         member_since=user.created_at.isoformat(),
         recent_posts=recent_posts,
     )

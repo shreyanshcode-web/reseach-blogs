@@ -76,6 +76,9 @@ async def run_startup_migrations() -> None:
             "CREATE INDEX IF NOT EXISTS ix_engagements_post_created ON engagements (post_id, created_at)",
             "CREATE INDEX IF NOT EXISTS ix_posts_view_count ON posts (view_count)",
             "CREATE INDEX IF NOT EXISTS ix_posts_like_count ON posts (like_count)",
+            "CREATE TABLE IF NOT EXISTS follows (id INTEGER PRIMARY KEY, follower_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE, followed_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE, created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, CONSTRAINT uq_follows_pair UNIQUE (follower_id, followed_id))",
+            "CREATE INDEX IF NOT EXISTS ix_follows_follower ON follows (follower_id)",
+            "CREATE INDEX IF NOT EXISTS ix_follows_followed ON follows (followed_id)",
         ]
         for statement in index_statements:
             await conn.execute(text(statement))

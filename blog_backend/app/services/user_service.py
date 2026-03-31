@@ -4,6 +4,7 @@ from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security import create_access_token, hash_password, verify_password
+from app.services.follow_service import follow_service
 from app.models.user import User
 from app.repositories.user_repository import user_repository
 from app.schemas.user_schema import Token, UserCreate, UserUpdate
@@ -41,6 +42,20 @@ class UserService:
             )
         token = create_access_token(data={"sub": str(user.id)})
         return Token(access_token=token)
+
+    async def serialize_user(self, db: AsyncSession, user: User) -> dict:
+        followers_count, following_count = await follow_service.get_follow_counts(db, user.id)
+        return {
+            "id": user.id,
+            "username": user.username,
+            "email": user.email,
+            "is_active": user.is_active,
+            "is_admin": user.is_admin,
+            "is_suspended": user.is_suspended,
+            "followers_count": followers_count,
+            "following_count": following_count,
+            "created_at": user.created_at,
+        }
 
     async def get_user(self, db: AsyncSession, user_id: int) -> User:
         user = await user_repository.get_by_id(db, user_id)

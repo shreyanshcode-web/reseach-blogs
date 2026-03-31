@@ -53,10 +53,13 @@ class ProfileResponse(BaseModel):
     certifications: list | None = None
     projects: list | None = None
     total_posts: int = 0
+    followers_count: int = 0
+    following_count: int = 0
     member_since: str = ""
 
 
 class PublicPortfolioResponse(BaseModel):
+    user_id: int
     username: str
     display_name: str | None = None
     bio: str | None = None
@@ -76,5 +79,7 @@ class PublicPortfolioResponse(BaseModel):
     certifications: list | None = None
     projects: list | None = None
     total_posts: int = 0
+    followers_count: int = 0
+    following_count: int = 0
     member_since: str = ""
     recent_posts: list = []

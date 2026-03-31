@@ -4,12 +4,11 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 
 import './creative.css'
 import './editorial.css'
-import { GuestOnlyRoute, LandingRoute, ProtectedRoute } from './components/routing/RouteGuards.jsx'
+import { GuestOnlyRoute, ProtectedRoute } from './components/routing/RouteGuards.jsx'
 import AppShellLayout from './layouts/AppShellLayout.jsx'
 import AuthLayout from './layouts/AuthLayout.jsx'
 import DashboardLayout from './layouts/DashboardLayout.jsx'
 import EditorLayout from './layouts/EditorLayout.jsx'
-import PublicLayout from './layouts/PublicLayout.jsx'
 import { initializeTheme } from './lib/theme.js'
 import CreatePost from './pages/CreatePost.jsx'
 import CreativeLanding from './pages/CreativeLanding.jsx'
@@ -32,11 +31,17 @@ createRoot(document.getElementById('root')).render(
   <StrictMode>
     <BrowserRouter>
       <Routes>
-        <Route element={<PublicLayout />}>
-          <Route path="/" element={<LandingRoute><CreativeLanding /></LandingRoute>} />
-          <Route path="/classic" element={<LandingPage />} />
-          <Route path="/hero" element={<HeroPage />} />
+        <Route element={<AppShellLayout />}>
+          <Route path="/" element={<HomeFeedPage />} />
+          <Route path="/home" element={<HomeFeedPage />} />
+          <Route path="/search" element={<SearchPage />} />
+          <Route path="/profile/:username" element={<ProfilePage />} />
+          <Route path="/post/:id" element={<PostViewPage />} />
         </Route>
+
+        <Route path="/creative" element={<CreativeLanding />} />
+        <Route path="/classic" element={<LandingPage />} />
+        <Route path="/hero" element={<HeroPage />} />
 
         <Route element={<GuestOnlyRoute />}>
           <Route element={<AuthLayout />}>
@@ -49,9 +54,6 @@ createRoot(document.getElementById('root')).render(
         <Route path="/signup" element={<Navigate to="/auth/signup" replace />} />
 
         <Route element={<ProtectedRoute />}>
-          <Route element={<AppShellLayout />}>
-            <Route path="/home" element={<HomeFeedPage />} />
-          </Route>
           <Route element={<EditorLayout />}>
             <Route path="/editor" element={<CreatePost />} />
           </Route>
@@ -61,12 +63,6 @@ createRoot(document.getElementById('root')).render(
             <Route path="drafts" element={<DashboardDraftsPage />} />
             <Route path="settings" element={<DashboardSettingsPage />} />
           </Route>
-        </Route>
-
-        <Route element={<AppShellLayout />}>
-          <Route path="/search" element={<SearchPage />} />
-          <Route path="/profile/:username" element={<ProfilePage />} />
-          <Route path="/post/:id" element={<PostViewPage />} />
         </Route>
 
         <Route path="/create-post" element={<Navigate to="/editor" replace />} />

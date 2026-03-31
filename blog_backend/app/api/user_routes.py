@@ -16,7 +16,7 @@ router = APIRouter(prefix="/api/users", tags=["Users"])
 async def register(data: UserCreate, db: AsyncSession = Depends(get_db)):
     """Register a new user."""
     user = await user_service.register(db, data)
-    return user
+    return await user_service.serialize_user(db, user)
 
 
 @router.post("/login", response_model=Token)
@@ -26,9 +26,12 @@ async def login(data: UserLogin, db: AsyncSession = Depends(get_db)):
 
 
 @router.get("/me", response_model=UserResponse)
-async def get_current_user_profile(current_user: User = Depends(get_current_user)):
+async def get_current_user_profile(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     """Get the currently authenticated user's profile."""
-    return current_user
+    return await user_service.serialize_user(db, current_user)
 
 
 @router.get("/", response_model=List[UserResponse])
@@ -38,13 +41,15 @@ async def list_users(
     db: AsyncSession = Depends(get_db),
 ):
     """List all users with pagination."""
-    return await user_service.get_all_users(db, skip=skip, limit=limit)
+    users = await user_service.get_all_users(db, skip=skip, limit=limit)
+    return [await user_service.serialize_user(db, user) for user in users]
 
 
 @router.get("/{user_id}", response_model=UserResponse)
 async def get_user(user_id: int, db: AsyncSession = Depends(get_db)):
     """Get a user by ID."""
-    return await user_service.get_user(db, user_id)
+    user = await user_service.get_user(db, user_id)
+    return await user_service.serialize_user(db, user)
 
 
 @router.put("/{user_id}", response_model=UserResponse)
@@ -55,7 +60,8 @@ async def update_user(
     current_user: User = Depends(get_current_user),
 ):
     """Update a user (authenticated)."""
-    return await user_service.update_user(db, user_id, data)
+    user = await user_service.update_user(db, user_id, data)
+    return await user_service.serialize_user(db, user)
 
 
 @router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT)

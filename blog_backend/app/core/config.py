@@ -10,6 +10,14 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     GEMINI_API_KEY: str = ""
     MEDIA_ROOT: str = "./media"
+    REDIS_URL: str = "redis://localhost:6379/0"
+    REDIS_TIMELINE_TTL_SECONDS: int = 300
+    KAFKA_BOOTSTRAP_SERVERS: str = "localhost:9092"
+    KAFKA_TIMELINE_TOPIC: str = "timeline-events"
+    KAFKA_GROUP_ID: str = "blog-timeline-service"
+    TIMELINE_CACHE_ENABLED: bool = True
+    TIMELINE_EVENTS_ENABLED: bool = True
+    TIMELINE_CELEBRITY_THRESHOLD: int = 1000
 
     model_config = {"env_file": ".env", "extra": "ignore"}
 

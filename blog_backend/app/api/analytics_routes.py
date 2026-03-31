@@ -15,6 +15,7 @@ from app.models.post import Post
 from app.models.user import User
 from app.models.weekly_top import WeeklyTopPost
 from app.schemas.post_schema import PostResponse
+from app.services.timeline_events import timeline_event_bus
 
 router = APIRouter(prefix="/api/analytics", tags=["Analytics"])
 
@@ -181,6 +182,14 @@ async def record_engagement(
     await db.flush()
     await _increment_post_counter(db, data.post_id, ENGAGEMENT_COUNTER_FIELDS[data.type], 1)
     await db.commit()
+    await timeline_event_bus.publish(
+        "engagement.recorded",
+        {
+            "post_id": data.post_id,
+            "user_id": current_user.id,
+            "type": data.type,
+        },
+    )
     return {"detail": f"{data.type.capitalize()} recorded"}
 
 
