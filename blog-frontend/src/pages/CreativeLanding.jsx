@@ -4,6 +4,7 @@ import SmoothScroll from '../components/creative/SmoothScroll';
 import CustomCursor from '../components/creative/CustomCursor';
 import CreativeLoadingScreen from '../components/creative/CreativeLoadingScreen';
 import CreativeNavbar from '../components/creative/CreativeNavbar';
+import { apiRequest } from '../lib/api';
 
 // Lazy load heavy components
 const CreativeHero = lazy(() => import('../components/creative/CreativeHero'));
@@ -14,17 +15,14 @@ import { CreativeTicker, CreativeLatestStories, CreativeManifesto, CreativeMakin
 import CreativeFooter from '../components/creative/CreativeFooter';
 import '../creative.css';
 
-const API = import.meta.env.VITE_API_URL || 'http://localhost:8001';
-
 export default function CreativeLanding() {
   const [posts, setPosts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     // 1. Data Fetching
-    fetch(`${API}/api/posts/?limit=9`)
-      .then(r => r.json())
-      .then(d => setPosts(Array.isArray(d) ? d : []))
+    apiRequest('/api/posts/?limit=9')
+      .then((data) => setPosts(Array.isArray(data) ? data : []))
       .catch(() => {});
 
     // 2. Failsafe Timeout

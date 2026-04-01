@@ -9,7 +9,7 @@ export default function SearchPage() {
   const [posts, setPosts] = useState([]);
 
   useEffect(() => {
-    apiRequest("/api/posts/?limit=40")
+    apiRequest("/api/posts/search?limit=40")
       .then((data) => setPosts(normalizePosts(data)))
       .catch(() => setPosts([]));
   }, []);
@@ -25,6 +25,29 @@ export default function SearchPage() {
         .some((value) => String(value).toLowerCase().includes(needle))
     );
   }, [posts, query]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => {
+      const url = query.trim()
+        ? `/api/posts/search?limit=40&q=${encodeURIComponent(query.trim())}`
+        : "/api/posts/search?limit=40";
+      apiRequest(url, {
+        signal: controller.signal,
+      })
+        .then((data) => setPosts(normalizePosts(data)))
+        .catch((error) => {
+          if (error.name !== "AbortError") {
+            setPosts([]);
+          }
+        });
+    }, 200);
+
+    return () => {
+      controller.abort();
+      window.clearTimeout(timeout);
+    };
+  }, [query]);
 
   return (
     <section className="ed-page">

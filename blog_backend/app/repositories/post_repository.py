@@ -1,10 +1,11 @@
 from typing import Optional, Sequence
 
-from sqlalchemy import or_, select
+from sqlalchemy import String, cast, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 
 from app.models.post import Post
+from app.models.user import User
 
 
 class PostRepository:
@@ -69,6 +70,43 @@ class PostRepository:
                 Post.published.is_(True),
                 Post.is_suspended.is_(False),
                 Post.moderation_status != "explicit",
+            )
+        result = await db.execute(stmt)
+        return result.scalars().unique().all()
+
+    async def search(
+        self,
+        db: AsyncSession,
+        query: str,
+        skip: int = 0,
+        limit: int = 100,
+        current_user_id: int | None = None,
+    ) -> Sequence[Post]:
+        pattern = f"%{query.strip()}%"
+        stmt = (
+            select(Post)
+            .join(User, User.id == Post.author_id)
+            .options(joinedload(Post.author))
+            .where(
+                or_(
+                    Post.title.ilike(pattern),
+                    User.username.ilike(pattern),
+                    cast(Post.content, String).ilike(pattern),
+                )
+            )
+            .offset(skip)
+            .limit(limit)
+        )
+        if current_user_id is None:
+            stmt = stmt.where(
+                Post.published.is_(True),
+                Post.is_suspended.is_(False),
+                Post.moderation_status != "explicit",
+            )
+        else:
+            stmt = stmt.where(
+                or_(Post.published.is_(True), Post.author_id == current_user_id),
+                or_(Post.is_suspended.is_(False), Post.author_id == current_user_id),
             )
         result = await db.execute(stmt)
         return result.scalars().unique().all()

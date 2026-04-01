@@ -302,7 +302,10 @@ class TimelineService:
         return base_score + affinity_boost
 
     def _global_score(self, post: Post) -> float:
-        hours_since_publish = max((datetime.now(timezone.utc) - post.created_at).total_seconds() / 3600, 1.0)
+        created_at = post.created_at
+        if created_at.tzinfo is None:
+            created_at = created_at.replace(tzinfo=timezone.utc)
+        hours_since_publish = max((datetime.now(timezone.utc) - created_at).total_seconds() / 3600, 1.0)
         recency_score = max(0.0, 72 - hours_since_publish) * 1.5
         engagement_score = (
             (post.like_count * 4.0)
@@ -386,7 +389,10 @@ class TimelineService:
         await pipeline.execute()
 
     def _timeline_score(self, post: Post) -> float:
-        return self._global_score(post) + float(int(post.created_at.timestamp()))
+        created_at = post.created_at
+        if created_at.tzinfo is None:
+            created_at = created_at.replace(tzinfo=timezone.utc)
+        return self._global_score(post) + float(int(created_at.timestamp()))
 
     def _global_key(self) -> str:
         return "timeline:home:global:v2"

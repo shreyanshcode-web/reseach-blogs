@@ -16,10 +16,9 @@ export default function ProfilePage() {
       .then(setProfile)
       .catch(() => setProfile(null));
 
-    apiRequest("/api/posts/?limit=50")
+    apiRequest(`/api/posts/author/${username}?limit=50`)
       .then((data) => {
-        const all = normalizePosts(data);
-        setPosts(all.filter((post) => post.author?.username === username));
+        setPosts(normalizePosts(data));
       })
       .catch(() => setPosts([]));
   }, [username]);

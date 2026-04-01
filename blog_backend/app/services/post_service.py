@@ -136,6 +136,50 @@ class PostService:
             current_user_id=current_user.id if current_user else None,
         )
 
+    async def get_posts_by_author_username(
+        self,
+        db: AsyncSession,
+        username: str,
+        skip: int = 0,
+        limit: int = 100,
+        current_user: User | None = None,
+    ) -> Sequence[Post]:
+        author = await user_repository.get_by_username(db, username)
+        if not author:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Author not found"
+            )
+        return await self.get_posts_by_author(
+            db,
+            author.id,
+            skip=skip,
+            limit=limit,
+            current_user=current_user,
+        )
+
+    async def search_posts(
+        self,
+        db: AsyncSession,
+        query: str,
+        skip: int = 0,
+        limit: int = 100,
+        current_user: User | None = None,
+    ) -> Sequence[Post]:
+        if not query.strip():
+            return await self.get_all_posts(
+                db,
+                skip=skip,
+                limit=limit,
+                current_user=current_user,
+            )
+        return await post_repository.search(
+            db,
+            query=query,
+            skip=skip,
+            limit=limit,
+            current_user_id=current_user.id if current_user else None,
+        )
+
     async def update_post(
         self, db: AsyncSession, post_id: int, data: PostUpdate, current_user_id: int
     ) -> Post:

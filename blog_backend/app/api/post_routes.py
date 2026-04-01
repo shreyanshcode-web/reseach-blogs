@@ -46,6 +46,42 @@ async def list_posts(
     )
 
 
+@router.get("/search", response_model=List[PostResponse])
+async def search_posts(
+    q: str = "",
+    skip: int = 0,
+    limit: int = 100,
+    db: AsyncSession = Depends(get_db),
+    current_user: User | None = Depends(get_current_user_optional),
+):
+    """Search posts by title, author username, or serialized content."""
+    return await post_service.search_posts(
+        db,
+        query=q,
+        skip=skip,
+        limit=limit,
+        current_user=current_user,
+    )
+
+
+@router.get("/author/{username}", response_model=List[PostResponse])
+async def list_posts_by_author(
+    username: str,
+    skip: int = 0,
+    limit: int = 100,
+    db: AsyncSession = Depends(get_db),
+    current_user: User | None = Depends(get_current_user_optional),
+):
+    """List posts for a specific author username."""
+    return await post_service.get_posts_by_author_username(
+        db,
+        username=username,
+        skip=skip,
+        limit=limit,
+        current_user=current_user,
+    )
+
+
 @router.get("/{post_id}", response_model=PostResponse)
 async def get_post(
     post_id: int, 

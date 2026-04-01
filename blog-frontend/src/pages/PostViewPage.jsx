@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 
-import { apiRequest } from "../lib/api";
+import { apiRequest, jsonBody } from "../lib/api";
 import { getPostPlainText, normalizePost } from "../lib/posts";
 
 export default function PostViewPage() {
@@ -19,6 +19,20 @@ export default function PostViewPage() {
         setPost(null);
         setError(err.message || "Unable to load this post.");
       });
+  }, [id]);
+
+  useEffect(() => {
+    if (!id) {
+      return;
+    }
+
+    apiRequest("/api/analytics/view", {
+      method: "POST",
+      body: jsonBody({
+        post_id: Number(id),
+        page_path: `/post/${id}`,
+      }),
+    }).catch(() => {});
   }, [id]);
 
   if (error) {
