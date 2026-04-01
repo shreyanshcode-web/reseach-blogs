@@ -4,6 +4,7 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 
 import './creative.css'
 import './editorial.css'
+import RouteTransitionLoader from './components/RouteTransitionLoader.jsx'
 import { GuestOnlyRoute, ProtectedRoute } from './components/routing/RouteGuards.jsx'
 import AppShellLayout from './layouts/AppShellLayout.jsx'
 import AuthLayout from './layouts/AuthLayout.jsx'
@@ -30,45 +31,48 @@ initializeTheme()
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <BrowserRouter>
-      <Routes>
-        <Route element={<AppShellLayout />}>
-          <Route path="/" element={<HomeFeedPage />} />
-          <Route path="/home" element={<HomeFeedPage />} />
-          <Route path="/search" element={<SearchPage />} />
-          <Route path="/profile/:username" element={<ProfilePage />} />
-          <Route path="/post/:id" element={<PostViewPage />} />
-        </Route>
+      <RouteTransitionLoader>
+        <Routes>
+          <Route path="/" element={<Navigate to="/auth/login" replace />} />
 
-        <Route path="/creative" element={<CreativeLanding />} />
-        <Route path="/classic" element={<LandingPage />} />
-        <Route path="/hero" element={<HeroPage />} />
-
-        <Route element={<GuestOnlyRoute />}>
-          <Route element={<AuthLayout />}>
-            <Route path="/auth/login" element={<Login />} />
-            <Route path="/auth/signup" element={<Signup />} />
+          <Route element={<AppShellLayout />}>
+            <Route path="/home" element={<HomeFeedPage />} />
+            <Route path="/search" element={<SearchPage />} />
+            <Route path="/profile/:username" element={<ProfilePage />} />
+            <Route path="/post/:id" element={<PostViewPage />} />
           </Route>
-        </Route>
 
-        <Route path="/login" element={<Navigate to="/auth/login" replace />} />
-        <Route path="/signup" element={<Navigate to="/auth/signup" replace />} />
+          <Route path="/creative" element={<CreativeLanding />} />
+          <Route path="/classic" element={<LandingPage />} />
+          <Route path="/hero" element={<HeroPage />} />
 
-        <Route element={<ProtectedRoute />}>
-          <Route element={<EditorLayout />}>
-            <Route path="/editor" element={<CreatePost />} />
+          <Route element={<GuestOnlyRoute />}>
+            <Route element={<AuthLayout />}>
+              <Route path="/auth/login" element={<Login />} />
+              <Route path="/auth/signup" element={<Signup />} />
+            </Route>
           </Route>
-          <Route path="/dashboard" element={<DashboardLayout />}>
-            <Route index element={<Navigate to="/dashboard/posts" replace />} />
-            <Route path="posts" element={<Dashboard />} />
-            <Route path="drafts" element={<DashboardDraftsPage />} />
-            <Route path="settings" element={<DashboardSettingsPage />} />
-          </Route>
-        </Route>
 
-        <Route path="/create-post" element={<Navigate to="/editor" replace />} />
-        <Route path="/404" element={<NotFoundPage />} />
-        <Route path="*" element={<Navigate to="/404" replace />} />
-      </Routes>
+          <Route path="/login" element={<Navigate to="/auth/login" replace />} />
+          <Route path="/signup" element={<Navigate to="/auth/signup" replace />} />
+
+          <Route element={<ProtectedRoute />}>
+            <Route element={<EditorLayout />}>
+              <Route path="/editor" element={<CreatePost />} />
+            </Route>
+            <Route path="/dashboard" element={<DashboardLayout />}>
+              <Route index element={<Navigate to="/dashboard/posts" replace />} />
+              <Route path="posts" element={<Dashboard />} />
+              <Route path="drafts" element={<DashboardDraftsPage />} />
+              <Route path="settings" element={<DashboardSettingsPage />} />
+            </Route>
+          </Route>
+
+          <Route path="/create-post" element={<Navigate to="/editor" replace />} />
+          <Route path="/404" element={<NotFoundPage />} />
+          <Route path="*" element={<Navigate to="/404" replace />} />
+        </Routes>
+      </RouteTransitionLoader>
     </BrowserRouter>
   </StrictMode>,
 )

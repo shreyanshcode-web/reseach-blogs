@@ -9,6 +9,7 @@ export default function Navbar({ alwaysSolid = false }) {
   const [scrolled, setScrolled] = useState(alwaysSolid);
   const [menuOpen, setMenuOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
+  const homeHref = currentUser || getAuthToken() ? "/home" : "/auth/login";
 
   useEffect(() => {
     if (alwaysSolid) return;
@@ -39,10 +40,10 @@ export default function Navbar({ alwaysSolid = false }) {
 
   return (
     <nav className={scrolled ? "nav nav--solid" : "nav"}>
-      <Link to="/" className="logo">The Making<span>.</span>Of</Link>
+      <Link to={homeHref} className="logo">The Making<span>.</span>Of</Link>
       <div className={menuOpen ? "nav-links open" : "nav-links"}>
-        <a href="/#stories" onClick={() => setMenuOpen(false)}>Stories</a>
-        <a href="/#topics" onClick={() => setMenuOpen(false)}>Topics</a>
+        <Link to={homeHref} onClick={() => setMenuOpen(false)}>Home</Link>
+        <Link to="/search" onClick={() => setMenuOpen(false)}>Search</Link>
         <Link to="/dashboard" onClick={() => setMenuOpen(false)}>Dashboard</Link>
         <Link to="/editor" onClick={() => setMenuOpen(false)}>Write</Link>
         <button type="button" className="theme-toggle" aria-label="Toggle theme" onClick={toggleTheme}>

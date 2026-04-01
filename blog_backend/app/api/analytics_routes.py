@@ -15,6 +15,7 @@ from app.models.post import Post
 from app.models.user import User
 from app.models.weekly_top import WeeklyTopPost
 from app.schemas.post_schema import PostResponse
+from app.services.analytics_service import analytics_service
 from app.services.timeline_events import timeline_event_bus
 
 router = APIRouter(prefix="/api/analytics", tags=["Analytics"])
@@ -48,6 +49,22 @@ class PostStatsResponse(BaseModel):
     shares: int
     bookmarks: int
     comments: int = 0
+    engagement_rate: float = 0.0
+    published: bool = False
+    created_at: datetime
+
+
+class ReachPointResponse(BaseModel):
+    label: str
+    views: int
+    unique_visitors: int
+
+
+class FollowersSnapshotResponse(BaseModel):
+    total_followers: int
+    gained_this_week: int
+    gained_last_week: int
+    growth_percent: float
 
 
 class DashboardResponse(BaseModel):
@@ -58,6 +75,13 @@ class DashboardResponse(BaseModel):
     views_this_week: int
     views_last_week: int
     growth_percent: float
+    reach_this_week: int
+    reach_last_week: int
+    reach_growth_percent: float
+    followers: FollowersSnapshotResponse
+    avg_engagement_rate: float
+    post_performance: List[PostStatsResponse]
+    reach_series: List[ReachPointResponse]
     top_posts: List[PostStatsResponse]
 
 
@@ -198,98 +222,8 @@ async def get_user_dashboard(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    now = datetime.now(timezone.utc)
-    week_ago = now - timedelta(days=7)
-    two_weeks_ago = now - timedelta(days=14)
-
-    user_posts_result = await db.execute(
-        select(Post)
-        .where(Post.author_id == current_user.id)
-        .order_by(Post.view_count.desc(), Post.created_at.desc())
-    )
-    user_posts = user_posts_result.scalars().all()
-
-    if not user_posts:
-        return DashboardResponse(
-            total_views=0,
-            unique_visitors=0,
-            total_engagements=0,
-            total_posts=0,
-            views_this_week=0,
-            views_last_week=0,
-            growth_percent=0.0,
-            top_posts=[],
-        )
-
-    post_ids = [post.id for post in user_posts]
-    total_views = sum(post.view_count for post in user_posts)
-    total_engagements = sum(
-        post.like_count + post.share_count + post.bookmark_count + post.comment_count
-        for post in user_posts
-    )
-
-    unique_visitors = (
-        await db.execute(
-            select(func.count(func.distinct(PageView.ip_hash))).where(PageView.post_id.in_(post_ids))
-        )
-    ).scalar() or 0
-
-    views_this_week = (
-        await db.execute(
-            select(func.count(PageView.id)).where(
-                and_(PageView.post_id.in_(post_ids), PageView.created_at >= week_ago)
-            )
-        )
-    ).scalar() or 0
-    views_last_week = (
-        await db.execute(
-            select(func.count(PageView.id)).where(
-                and_(
-                    PageView.post_id.in_(post_ids),
-                    PageView.created_at >= two_weeks_ago,
-                    PageView.created_at < week_ago,
-                )
-            )
-        )
-    ).scalar() or 0
-
-    growth = 0.0
-    if views_last_week > 0:
-        growth = round(((views_this_week - views_last_week) / views_last_week) * 100, 1)
-    elif views_this_week > 0:
-        growth = 100.0
-
-    top_posts = []
-    for post in user_posts[:10]:
-        unique_post_visitors = (
-            await db.execute(
-                select(func.count(func.distinct(PageView.ip_hash))).where(PageView.post_id == post.id)
-            )
-        ).scalar() or 0
-        top_posts.append(
-            PostStatsResponse(
-                post_id=post.id,
-                title=post.title,
-                total_views=post.view_count,
-                unique_visitors=unique_post_visitors,
-                total_engagements=post.like_count + post.share_count + post.bookmark_count + post.comment_count,
-                likes=post.like_count,
-                shares=post.share_count,
-                bookmarks=post.bookmark_count,
-                comments=post.comment_count,
-            )
-        )
-
-    return DashboardResponse(
-        total_views=total_views,
-        unique_visitors=unique_visitors,
-        total_engagements=total_engagements,
-        total_posts=len(user_posts),
-        views_this_week=views_this_week,
-        views_last_week=views_last_week,
-        growth_percent=growth,
-        top_posts=top_posts,
-    )
+    dashboard_data = await analytics_service.build_user_dashboard(db, current_user)
+    return DashboardResponse(**dashboard_data)
 
 
 @router.get("/library", response_model=UserLibraryResponse)

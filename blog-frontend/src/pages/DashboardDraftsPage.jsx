@@ -16,19 +16,58 @@ export default function DashboardDraftsPage() {
   const filtered = useMemo(() => drafts.filter((post) => !post.published), [drafts]);
 
   return (
-    <section style={{ padding: 28, borderRadius: 30, background: "rgba(255,255,255,0.88)", border: "1px solid rgba(15,23,42,0.08)" }}>
-      <p className="eyebrow">Drafts</p>
-      <h2 style={{ fontFamily: '"Playfair Display", serif', fontSize: 36, marginBottom: 18 }}>Unpublished work</h2>
-      <div style={{ display: "grid", gap: 14 }}>
-        {filtered.map((post) => (
-          <div key={post.id} style={{ padding: 20, borderRadius: 22, background: "rgba(248,250,252,0.92)" }}>
-            <div style={{ fontWeight: 800, fontSize: 22, marginBottom: 8 }}>{post.title}</div>
-            <div style={{ color: "var(--gray)", lineHeight: 1.7, marginBottom: 12 }}>{post.excerpt || "Continue shaping this story in the editor."}</div>
-            <Link to="/editor" className="btn btn--ghost">Open Editor</Link>
+    <section className="app-shell__stack">
+      <section className="app-shell__stage-card app-shell__stage-card--ratio">
+        <p className="app-shell__eyebrow">Draft Shelf</p>
+        <h1 className="app-shell__section-title">Unpublished work stays inside the same creative workspace.</h1>
+        <p className="app-shell__section-copy">
+          Drafts now sit on the same widescreen glass stage as the rest of the app, so moving between published performance and unfinished stories feels continuous.
+        </p>
+        <div className="app-shell__metric-grid">
+          <div className="app-shell__metric-card">
+            <div className="app-shell__metric-label">Open Drafts</div>
+            <div className="app-shell__metric-value">{filtered.length}</div>
+            <div className="app-shell__metric-note">Stories still in progress and not yet published.</div>
           </div>
-        ))}
-        {!filtered.length ? <div style={{ color: "var(--gray)" }}>No drafts yet. Your unpublished posts will appear here.</div> : null}
-      </div>
+          <div className="app-shell__metric-card">
+            <div className="app-shell__metric-label">Tagged</div>
+            <div className="app-shell__metric-value">{filtered.filter((post) => (post.tags || []).length > 0).length}</div>
+            <div className="app-shell__metric-note">Drafts that already have discovery tags applied.</div>
+          </div>
+        </div>
+      </section>
+
+      <section className="app-shell__stage-card">
+        <p className="app-shell__eyebrow">Draft List</p>
+        <div className="app-shell__story-list">
+          {filtered.map((post) => (
+            <article key={post.id} className="app-shell__story-card" style={{ display: "block" }}>
+              <div className="app-shell__story-head">
+                <span>{post.category}</span>
+                <span>{new Date(post.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>
+              </div>
+              <h2 className="app-shell__story-title">{post.title}</h2>
+              <p className="app-shell__story-copy">{post.excerpt || "Continue shaping this story in the editor."}</p>
+              <div className="app-shell__story-foot">
+                {(post.tags || []).slice(0, 4).map((tag) => (
+                  <span key={tag} className="app-shell__tag">
+                    #{tag}
+                  </span>
+                ))}
+                <Link to="/editor" className="app-shell__button">
+                  Open Editor
+                </Link>
+                <Link to={`/post/${post.id}`} className="app-shell__button">
+                  Preview
+                </Link>
+              </div>
+            </article>
+          ))}
+          {!filtered.length ? (
+            <div className="app-shell__empty">No drafts yet. Your unpublished posts will appear here.</div>
+          ) : null}
+        </div>
+      </section>
     </section>
   );
 }

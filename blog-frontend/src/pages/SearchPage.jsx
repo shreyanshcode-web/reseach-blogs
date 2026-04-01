@@ -51,15 +51,24 @@ export default function SearchPage() {
 
   return (
     <section className="ed-page">
-      <div className="ed-panel">
+      <div className="ed-panel ed-hero">
         <p className="ed-kicker">Search</p>
         <h1 className="ed-headline" style={{ fontSize: "clamp(38px, 5vw, 72px)" }}>Find bold writing.</h1>
+        <p className="ed-copy">
+          Search through titles, authors, tags, and excerpts to uncover published posts faster. The results update as
+          you type, so this page works more like a live index than a static archive.
+        </p>
         <input
           value={query}
           onChange={(event) => setQuery(event.target.value)}
           placeholder="Search by title, author, tag, or excerpt"
           className="ed-input"
         />
+        <div className="ed-meta" style={{ marginTop: 16 }}>
+          <span>{filtered.length} result{filtered.length === 1 ? "" : "s"}</span>
+          <span>·</span>
+          <span>{query.trim() ? `Searching for "${query.trim()}"` : "Browse all indexed posts"}</span>
+        </div>
       </div>
 
       <div className="ed-panel">

@@ -1,13 +1,79 @@
 
+.pixel-bat-loader {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: grid;
+  place-items: center;
+  gap: 18px;
+  background:
+    radial-gradient(circle at center, rgba(232, 0, 29, 0.14), transparent 22%),
+    linear-gradient(180deg, rgba(5, 5, 5, 0.96), rgba(10, 10, 15, 0.98));
+  color: #f0f0f0;
+}
+
+.pixel-bat-loader__field {
+  position: relative;
+  width: min(48vw, 360px);
+  aspect-ratio: 16 / 9;
+  border-radius: 28px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.06) 1px, transparent 1px),
+    rgba(255, 255, 255, 0.02);
+  background-size: 28px 28px, 28px 28px, auto;
+  overflow: hidden;
+}
+
+.pixel-bat-loader__field::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent, rgba(232, 0, 29, 0.08), transparent);
+  animation: pixel-bat-scan 1.6s linear infinite;
+}
+
+.pixel-bat-loader__copy {
+  display: grid;
+  gap: 6px;
+  justify-items: center;
+  text-align: center;
+}
+
+.pixel-bat-loader__label {
+  font-family: "Sora", sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+
+.pixel-bat-loader__sub {
+  font-size: 14px;
+  color: rgba(240, 240, 240, 0.62);
+}
+
 .bat {
   width: 1px;
   height: 1px;
   transform: scale(4);
   position: relative;
-  left: -128px;
-  top: -128px;
+  left: 50%;
+  top: 50%;
+  margin-left: -128px;
+  margin-top: -128px;
   -webkit-animation: 0.4s bat steps(1) infinite;
           animation: 0.4s bat steps(1) infinite;
+}
+
+@keyframes pixel-bat-scan {
+  from {
+    transform: translateY(-100%);
+  }
+  to {
+    transform: translateY(100%);
+  }
 }
 
 /* Bat animation */

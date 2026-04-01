@@ -7,17 +7,18 @@ import { normalizePosts } from "../lib/posts";
 
 function FeedCard({ post }) {
   return (
-    <Link to={`/post/${post.id}`} className="ed-item">
-      <div className="ed-meta" style={{ marginBottom: 12 }}>
+    <Link to={`/post/${post.id}`} className="app-shell__story-card">
+      <div className="app-shell__story-head">
         <span>{post.category}</span>
-        <span>·</span>
         <span>@{post.author?.username || "writer"}</span>
       </div>
-      <h2 className="ed-subheadline">{post.title}</h2>
-      <p className="ed-copy" style={{ marginBottom: 12 }}>{post.excerpt || "Open the post to read the full story."}</p>
-      <div className="ed-meta">
-        {post.tags?.slice(0, 4).map((tag) => (
-          <span key={tag}>#{tag}</span>
+      <h2 className="app-shell__story-title">{post.title}</h2>
+      <p className="app-shell__story-copy">{post.excerpt || "Open the post to read the full story."}</p>
+      <div className="app-shell__story-foot">
+        {(post.tags || []).slice(0, 4).map((tag) => (
+          <span key={tag} className="app-shell__tag">
+            #{tag}
+          </span>
         ))}
       </div>
     </Link>
@@ -94,53 +95,62 @@ export default function HomeFeedPage() {
   }, []);
 
   return (
-    <section className="ed-page">
-      <div className="ed-panel ed-hero">
-        <p className="ed-kicker">Homepage</p>
-        <h1 className="ed-headline">Read the latest posts in one place.</h1>
-        <p className="ed-copy">
-          The homepage now uses a timeline-style suggestion system inspired by Twitter: fast cached reads,
-          event-driven refreshes, fan-out write timelines for followed creators, and celebrity fallback on read.
+    <>
+      <section className="app-shell__stage-card app-shell__stage-card--ratio">
+        <p className="app-shell__eyebrow">Home Timeline</p>
+        <h1 className="app-shell__section-title">A full-screen feed that behaves like a live suggestion engine.</h1>
+        <p className="app-shell__section-copy">
+          This homepage now reads inside the creative landing system while keeping the Twitter-style timeline logic underneath:
+          cached fan-out delivery, live refresh signaling, and ranked story hydration on open.
         </p>
-        <div className="ed-meta" style={{ marginBottom: 18 }}>
-          <span>{timelineMeta.personalized ? "Personalized timeline" : "Global timeline"}</span>
-          <span>·</span>
-          <span>{timelineMeta.cached ? "Redis cached" : "Freshly ranked"}</span>
-          <span>·</span>
-          <span>{timelineMeta.deliveryModel}</span>
+        <div className="app-shell__metric-grid">
+          <div className="app-shell__metric-card">
+            <div className="app-shell__metric-label">Mode</div>
+            <div className="app-shell__metric-value">{timelineMeta.personalized ? "Personal" : "Global"}</div>
+            <div className="app-shell__metric-note">Whether the feed is tuned to the signed-in reader.</div>
+          </div>
+          <div className="app-shell__metric-card">
+            <div className="app-shell__metric-label">Cache</div>
+            <div className="app-shell__metric-value">{timelineMeta.cached ? "Redis" : "Fresh"}</div>
+            <div className="app-shell__metric-note">Served from cache when available instead of recomputing every time.</div>
+          </div>
+          <div className="app-shell__metric-card">
+            <div className="app-shell__metric-label">Source</div>
+            <div className="app-shell__metric-value">{timelineMeta.source}</div>
+            <div className="app-shell__metric-note">Current timeline path used to deliver this feed.</div>
+          </div>
+          <div className="app-shell__metric-card">
+            <div className="app-shell__metric-label">Delivery</div>
+            <div className="app-shell__metric-value">{timelineMeta.deliveryModel}</div>
+            <div className="app-shell__metric-note">Hybrid feed model inspired by real social timeline systems.</div>
+          </div>
         </div>
-        <div className="ed-actions">
-          <Link to="/editor" className="c-hero__cta">Start Writing</Link>
-          <Link to="/creative" className="c-hero__cta">View Creative Landing</Link>
+        <div className="app-shell__action-row" style={{ marginTop: 18 }}>
+          <Link to="/editor" className="app-shell__button app-shell__button--primary">
+            Start Writing
+          </Link>
+          <Link to="/creative" className="app-shell__button">
+            View Creative Landing
+          </Link>
         </div>
-      </div>
+      </section>
 
-      <div className="ed-panel">
-        <div className="ed-list">
+      <section className="app-shell__stage-card">
+        <p className="app-shell__eyebrow">Feed Stories</p>
+        <div className="app-shell__story-list">
           {status === "loading" ? (
-            <div className="ed-item">
-              <h2 className="ed-subheadline">Loading posts...</h2>
-              <p className="ed-copy" style={{ marginBottom: 0 }}>
-                Pulling the latest published stories for the homepage timeline.
-              </p>
-            </div>
+            <div className="app-shell__empty">Loading the timeline and hydrating the latest story suggestions.</div>
           ) : null}
 
           {status === "error" ? (
-            <div className="ed-item">
-              <h2 className="ed-subheadline">Posts could not be loaded.</h2>
-              <p className="ed-copy" style={{ marginBottom: 0 }}>
-                The feed is available, but the timeline service did not return stories right now. Try refreshing in a moment.
-              </p>
+            <div className="app-shell__empty">
+              The timeline service did not return stories right now. Refresh again in a moment.
             </div>
           ) : null}
 
           {status === "empty" ? (
-            <div className="ed-item">
-              <h2 className="ed-subheadline">No posts yet.</h2>
-              <p className="ed-copy" style={{ marginBottom: 0 }}>
-                Published stories will show up here as soon as writers push them live.
-              </p>
+            <div className="app-shell__empty">
+              No posts are live yet. Published stories will appear here as soon as writers push them live.
             </div>
           ) : null}
 
@@ -148,7 +158,7 @@ export default function HomeFeedPage() {
             <FeedCard key={post.id} post={post} />
           ))}
         </div>
-      </div>
-    </section>
+      </section>
+    </>
   );
 }

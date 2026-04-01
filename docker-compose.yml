@@ -24,10 +24,10 @@ services:
     ports:
       - "9092:9092"
 
-  backend:
+  auth-service:
     build:
       context: ./blog_backend
-    container_name: blog-backend
+    container_name: blog-auth-service
     environment:
       DATABASE_URL: sqlite+aiosqlite:///./data/blog.db
       ML_DATABASE_URL: sqlite+aiosqlite:///./data/ml_training.db
@@ -36,13 +36,108 @@ services:
       REDIS_URL: redis://redis:6379/0
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       KAFKA_TIMELINE_TOPIC: timeline-events
-    ports:
-      - "8001:8000"
+      TIMELINE_EVENTS_ENABLED: "false"
+      TIMELINE_CACHE_ENABLED: "false"
+    command: ["uvicorn", "app.service_apps.auth_app:app", "--host", "0.0.0.0", "--port", "8000"]
     volumes:
       - blog_backend_data:/app/data
     depends_on:
       - redis
       - kafka
+
+  content-service:
+    build:
+      context: ./blog_backend
+    container_name: blog-content-service
+    environment:
+      DATABASE_URL: sqlite+aiosqlite:///./data/blog.db
+      ML_DATABASE_URL: sqlite+aiosqlite:///./data/ml_training.db
+      SECRET_KEY: changeme
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      REDIS_URL: redis://redis:6379/0
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      KAFKA_TIMELINE_TOPIC: timeline-events
+    command: ["uvicorn", "app.service_apps.content_app:app", "--host", "0.0.0.0", "--port", "8000"]
+    volumes:
+      - blog_backend_data:/app/data
+    depends_on:
+      - redis
+      - kafka
+
+  analytics-service:
+    build:
+      context: ./blog_backend
+    container_name: blog-analytics-service
+    environment:
+      DATABASE_URL: sqlite+aiosqlite:///./data/blog.db
+      ML_DATABASE_URL: sqlite+aiosqlite:///./data/ml_training.db
+      SECRET_KEY: changeme
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      REDIS_URL: redis://redis:6379/0
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      KAFKA_TIMELINE_TOPIC: timeline-events
+      TIMELINE_EVENTS_ENABLED: "false"
+      TIMELINE_CACHE_ENABLED: "false"
+    command: ["uvicorn", "app.service_apps.analytics_app:app", "--host", "0.0.0.0", "--port", "8000"]
+    volumes:
+      - blog_backend_data:/app/data
+    depends_on:
+      - redis
+      - kafka
+
+  timeline-service:
+    build:
+      context: ./blog_backend
+    container_name: blog-timeline-service
+    environment:
+      DATABASE_URL: sqlite+aiosqlite:///./data/blog.db
+      ML_DATABASE_URL: sqlite+aiosqlite:///./data/ml_training.db
+      SECRET_KEY: changeme
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      REDIS_URL: redis://redis:6379/0
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      KAFKA_TIMELINE_TOPIC: timeline-events
+    command: ["uvicorn", "app.service_apps.timeline_app:app", "--host", "0.0.0.0", "--port", "8000"]
+    volumes:
+      - blog_backend_data:/app/data
+    depends_on:
+      - redis
+      - kafka
+
+  admin-service:
+    build:
+      context: ./blog_backend
+    container_name: blog-admin-service
+    environment:
+      DATABASE_URL: sqlite+aiosqlite:///./data/blog.db
+      ML_DATABASE_URL: sqlite+aiosqlite:///./data/ml_training.db
+      SECRET_KEY: changeme
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      REDIS_URL: redis://redis:6379/0
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      KAFKA_TIMELINE_TOPIC: timeline-events
+      TIMELINE_EVENTS_ENABLED: "false"
+      TIMELINE_CACHE_ENABLED: "false"
+    command: ["uvicorn", "app.service_apps.admin_app:app", "--host", "0.0.0.0", "--port", "8000"]
+    volumes:
+      - blog_backend_data:/app/data
+    depends_on:
+      - redis
+      - kafka
+
+  api-gateway:
+    image: nginx:1.27-alpine
+    container_name: blog-api-gateway
+    depends_on:
+      - auth-service
+      - content-service
+      - analytics-service
+      - timeline-service
+      - admin-service
+    volumes:
+      - ./blog_backend/nginx.gateway.conf:/etc/nginx/nginx.conf:ro
+    ports:
+      - "8001:80"
 
   frontend:
     build:
@@ -51,7 +146,7 @@ services:
         VITE_API_URL: http://localhost:8001
     container_name: blog-frontend
     depends_on:
-      - backend
+      - api-gateway
     ports:
       - "5173:80"
 

@@ -1,35 +1,59 @@
 import { NavLink, Outlet } from "react-router-dom";
 
-const tabStyle = ({ isActive }) => ({
-  textDecoration: "none",
-  padding: "12px 18px",
-  borderRadius: 999,
-  background: isActive ? "rgba(232, 0, 29, 0.16)" : "var(--c-glass)",
-  color: "var(--c-text)",
-  border: isActive ? "1px solid rgba(232, 0, 29, 0.26)" : "1px solid var(--c-glass-border)",
-  fontWeight: 700,
-});
+import "../app-shell.css";
+
+function tabClassName({ isActive }) {
+  return `app-shell__dashboard-tab${isActive ? " active" : ""}`;
+}
 
 export default function DashboardLayout() {
   return (
-    <div className="c-page" style={{ minHeight: "100vh", background: "linear-gradient(180deg, var(--c-bg) 0%, var(--c-bg-alt) 55%, var(--c-bg) 100%)", padding: "88px 0 64px" }}>
-      <div style={{ width: "min(1240px, 94vw)", margin: "0 auto" }}>
-        <header style={{ marginBottom: 22 }}>
-          <p className="c-section__label">Creator Panel</p>
-          <h1 style={{ fontFamily: 'var(--c-font-display)', fontSize: "clamp(40px, 6vw, 72px)", lineHeight: 0.95, marginBottom: 14, color: "var(--c-text)" }}>Dashboard</h1>
-          <p style={{ maxWidth: 760, color: "var(--c-text-dim)", lineHeight: 1.7 }}>
-            Manage published work, drafts, profile settings, and performance from one dedicated creator workspace.
-          </p>
-        </header>
+    <div className="app-shell__dashboard-frame">
+      <section className="app-shell__hero-strip">
+        <div className="app-shell__hero-card">
+          <div className="app-shell__glow app-shell__glow--one" />
+          <div className="app-shell__glow app-shell__glow--two" />
+          <div style={{ position: "relative", zIndex: 1 }}>
+            <p className="app-shell__eyebrow">Creator Console</p>
+            <h1 className="app-shell__headline">Dashboard built in the same creative system.</h1>
+            <p className="app-shell__copy">
+              Posts, drafts, settings, and performance now live inside the same widescreen glass-stage language as the landing experience,
+              so the product reads like one continuous app.
+            </p>
+            <nav className="app-shell__dashboard-tabs">
+              <NavLink end to="/dashboard/posts" className={tabClassName}>
+                Posts
+              </NavLink>
+              <NavLink to="/dashboard/drafts" className={tabClassName}>
+                Drafts
+              </NavLink>
+              <NavLink to="/dashboard/settings" className={tabClassName}>
+                Settings
+              </NavLink>
+            </nav>
+          </div>
+        </div>
 
-        <nav style={{ display: "flex", flexWrap: "wrap", gap: 12, marginBottom: 26 }}>
-          <NavLink end to="/dashboard/posts" style={tabStyle}>Posts</NavLink>
-          <NavLink to="/dashboard/drafts" style={tabStyle}>Drafts</NavLink>
-          <NavLink to="/dashboard/settings" style={tabStyle}>Settings</NavLink>
-        </nav>
+        <aside className="app-shell__side-card">
+          <p className="app-shell__eyebrow">Workspace Notes</p>
+          <div className="app-shell__mini-list">
+            <div className="app-shell__mini-block">
+              <div className="app-shell__mini-title">16:9 framing</div>
+              <div className="app-shell__mini-copy">The dashboard now uses widescreen stage panels instead of narrow center cards.</div>
+            </div>
+            <div className="app-shell__mini-block">
+              <div className="app-shell__mini-title">No side dead zones</div>
+              <div className="app-shell__mini-copy">Content stretches edge to edge with only minimal device-safe padding.</div>
+            </div>
+            <div className="app-shell__mini-block">
+              <div className="app-shell__mini-title">Shared creative identity</div>
+              <div className="app-shell__mini-copy">All creator pages now sit inside the same cinematic shell.</div>
+            </div>
+          </div>
+        </aside>
+      </section>
 
-        <Outlet />
-      </div>
+      <Outlet />
     </div>
   );
 }

@@ -57,9 +57,9 @@ export default function Signup() {
   return (
     <div className="site auth-page">
       <nav className="c-nav c-nav--solid">
-        <Link to="/" className="c-nav__logo">The Making<span className="c-dot">.</span>Of</Link>
+        <Link to="/auth/login" className="c-nav__logo">The Making<span className="c-dot">.</span>Of</Link>
         <div className="c-nav__links">
-          <Link to="/">Home</Link>
+          <Link to="/auth/login">Login</Link>
           <Link to="/auth/login" className="c-nav__cta">Log In</Link>
         </div>
       </nav>
