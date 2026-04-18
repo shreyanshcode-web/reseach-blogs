@@ -18,6 +18,8 @@ class Settings(BaseSettings):
     TIMELINE_CACHE_ENABLED: bool = True
     TIMELINE_EVENTS_ENABLED: bool = True
     TIMELINE_CELEBRITY_THRESHOLD: int = 1000
+    CLERK_ISSUER: str = ""
+    CLERK_JWKS_URL: str = ""
 
     model_config = {"env_file": ".env", "extra": "ignore"}
 

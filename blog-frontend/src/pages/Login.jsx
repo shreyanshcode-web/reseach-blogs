@@ -1,41 +1,32 @@
-import { useState } from "react";
+import { useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { SignIn, useAuth } from "@clerk/clerk-react";
 
 import "../auth.css";
 import "../styles.css";
-import { apiRequest, jsonBody, setAuthToken } from "../lib/api";
+import { setAuthToken } from "../lib/api";
 
 export default function Login() {
   const navigate = useNavigate();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [status, setStatus] = useState("");
-  const [message, setMessage] = useState("");
-  const [loading, setLoading] = useState(false);
+  const { isLoaded, isSignedIn, getToken } = useAuth();
 
-  async function handleSubmit(event) {
-    event.preventDefault();
-    setLoading(true);
-    setStatus("");
-    setMessage("");
-
-    try {
-      const data = await apiRequest("/api/users/login", {
-        method: "POST",
-        body: jsonBody({ email, password }),
-      });
-
-      setAuthToken(data.access_token);
-      setStatus("success");
-      setMessage("Logged in successfully. Redirecting to your home feed.");
-      navigate("/home");
-    } catch (error) {
-      setStatus("error");
-      setMessage(error.message || "Invalid credentials. Please try again.");
-    } finally {
-      setLoading(false);
+  useEffect(() => {
+    if (!isLoaded || !isSignedIn) {
+      return;
     }
-  }
+
+    (async () => {
+      try {
+        const token = await getToken();
+        if (token) {
+          setAuthToken(token);
+        }
+        navigate("/home");
+      } catch {
+        // ignore token fetch failure; Clerk will still manage the session
+      }
+    })();
+  }, [getToken, isLoaded, isSignedIn, navigate]);
 
   return (
     <div className="site auth-page">
@@ -60,8 +51,7 @@ export default function Login() {
 
           <p>
             Jump straight into your feed, continue a draft, or manage your creator dashboard.
-            The new auth flow now routes directly into the app shell instead of dropping you
-            into disconnected pages.
+            Clerk now securely handles login and token issuance, while the app keeps your session synced.
           </p>
 
           <div className="auth-hero__meta">
@@ -84,50 +74,21 @@ export default function Login() {
           <div className="auth-card__header">
             <p className="eyebrow">Login</p>
             <h2>Access your account</h2>
-            <p>Use the same email and password you registered with. Successful login redirects to `/home`.</p>
+            <p>Clerk handles sign-in securely and routes you into the blog experience.</p>
           </div>
 
-          <form className="auth-form" onSubmit={handleSubmit}>
-            <div className="auth-field">
-              <label htmlFor="login-email">Email address</label>
-              <input
-                id="login-email"
-                type="email"
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-                required
-                autoComplete="email"
-                placeholder="you@example.com"
-              />
-            </div>
+          <div className="auth-form" style={{ minWidth: 320 }}>
+            <SignIn
+              path="/auth/login"
+              routing="path"
+              signUpUrl="/auth/signup"
+              afterSignInUrl="/home"
+            />
+          </div>
 
-            <div className="auth-field">
-              <label htmlFor="login-password">Password</label>
-              <input
-                id="login-password"
-                type="password"
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                required
-                autoComplete="current-password"
-                placeholder="Enter your password"
-              />
-            </div>
-
-            <button type="submit" className="btn auth-submit" disabled={loading} style={{ opacity: loading ? 0.6 : 1 }}>
-              {loading ? "Logging in..." : "Log In"}
-            </button>
-
-            {message ? (
-              <div className={`auth-message ${status === "success" ? "auth-message--success" : "auth-message--error"}`}>
-                {message}
-              </div>
-            ) : null}
-
-            <p className="auth-switch">
-              Don&apos;t have an account? <Link to="/auth/signup">Create one</Link>
-            </p>
-          </form>
+          <p className="auth-switch">
+            Don&apos;t have an account? <Link to="/auth/signup">Create one</Link>
+          </p>
         </section>
       </section>
     </div>

@@ -1,58 +1,32 @@
-import { useMemo, useState } from "react";
+import { useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { SignUp, useAuth } from "@clerk/clerk-react";
 
 import "../auth.css";
 import "../styles.css";
-import { apiRequest, jsonBody, setAuthToken } from "../lib/api";
-
-function slugifyUsername(value) {
-  return value
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "_")
-    .replace(/^_+|_+$/g, "")
-    .slice(0, 50);
-}
+import { setAuthToken } from "../lib/api";
 
 export default function Signup() {
   const navigate = useNavigate();
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [status, setStatus] = useState("");
-  const [message, setMessage] = useState("");
-  const [loading, setLoading] = useState(false);
-  const suggestedUsername = useMemo(() => slugifyUsername(name), [name]);
+  const { isLoaded, isSignedIn, getToken } = useAuth();
 
-  async function handleSubmit(event) {
-    event.preventDefault();
-    setLoading(true);
-    setStatus("");
-    setMessage("");
-
-    try {
-      const username = suggestedUsername || slugifyUsername(email.split("@")[0] || "writer");
-      await apiRequest("/api/users/register", {
-        method: "POST",
-        body: jsonBody({ username, email, password }),
-      });
-
-      const loginData = await apiRequest("/api/users/login", {
-        method: "POST",
-        body: jsonBody({ email, password }),
-      });
-
-      setAuthToken(loginData.access_token);
-      setStatus("success");
-      setMessage(`Account created with username @${username}. Redirecting you to the editor.`);
-      navigate("/editor");
-    } catch (error) {
-      setStatus("error");
-      setMessage(error.message || "Something went wrong. Please try again.");
-    } finally {
-      setLoading(false);
+  useEffect(() => {
+    if (!isLoaded || !isSignedIn) {
+      return;
     }
-  }
+
+    (async () => {
+      try {
+        const token = await getToken();
+        if (token) {
+          setAuthToken(token);
+        }
+        navigate("/editor");
+      } catch {
+        // ignore token fetch failure; Clerk will still manage the session
+      }
+    })();
+  }, [getToken, isLoaded, isSignedIn, navigate]);
 
   return (
     <div className="site auth-page">
@@ -77,7 +51,8 @@ export default function Signup() {
 
           <p>
             Sign up once, get logged in immediately, and land in the editor so the first thing
-            you can do is write. That mirrors the flow you asked for and keeps the onboarding tight.
+            you can do is write. Clerk now manages your authentication securely and the app
+            keeps your session synced.
           </p>
 
           <div className="auth-hero__meta">
@@ -86,8 +61,8 @@ export default function Signup() {
               <span>No second step after signup</span>
             </div>
             <div>
-              <strong>Username</strong>
-              <span>Generated from your display name</span>
+              <strong>Secure auth</strong>
+              <span>Clerk handles password flow</span>
             </div>
             <div>
               <strong>Redirect</strong>
@@ -100,65 +75,21 @@ export default function Signup() {
           <div className="auth-card__header">
             <p className="eyebrow">Signup</p>
             <h2>Create your account</h2>
-            <p>Your backend username is generated from the display name, then you’re signed in and routed into the editor.</p>
+            <p>Clerk securely creates your account and sends you into the editor right away.</p>
           </div>
 
-          <form className="auth-form" onSubmit={handleSubmit}>
-            <div className="auth-field">
-              <label htmlFor="signup-name">Display name</label>
-              <input
-                id="signup-name"
-                type="text"
-                value={name}
-                onChange={(event) => setName(event.target.value)}
-                required
-                autoComplete="name"
-                placeholder="John Doe"
-              />
-              <small>Backend username will be saved as @{suggestedUsername || "writer_name"}.</small>
-            </div>
+          <div className="auth-form" style={{ minWidth: 320 }}>
+            <SignUp
+              path="/auth/signup"
+              routing="path"
+              signInUrl="/auth/login"
+              afterSignUpUrl="/editor"
+            />
+          </div>
 
-            <div className="auth-field">
-              <label htmlFor="signup-email">Email address</label>
-              <input
-                id="signup-email"
-                type="email"
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-                required
-                autoComplete="email"
-                placeholder="you@example.com"
-              />
-            </div>
-
-            <div className="auth-field">
-              <label htmlFor="signup-password">Password</label>
-              <input
-                id="signup-password"
-                type="password"
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                required
-                minLength={6}
-                autoComplete="new-password"
-                placeholder="Create a password"
-              />
-            </div>
-
-            <button type="submit" className="btn auth-submit" disabled={loading} style={{ opacity: loading ? 0.6 : 1 }}>
-              {loading ? "Creating account..." : "Sign Up"}
-            </button>
-
-            {message ? (
-              <div className={`auth-message ${status === "success" ? "auth-message--success" : "auth-message--error"}`}>
-                {message}
-              </div>
-            ) : null}
-
-            <p className="auth-switch">
-              Already have an account? <Link to="/auth/login">Log in</Link>
-            </p>
-          </form>
+          <p className="auth-switch">
+            Already have an account? <Link to="/auth/login">Log in</Link>
+          </p>
         </section>
       </section>
     </div>

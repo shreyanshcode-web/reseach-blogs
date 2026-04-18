@@ -36,9 +36,10 @@ services:
       REDIS_URL: redis://redis:6379/0
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       KAFKA_TIMELINE_TOPIC: timeline-events
-      TIMELINE_EVENTS_ENABLED: "false"
-      TIMELINE_CACHE_ENABLED: "false"
-    command: ["uvicorn", "app.service_apps.auth_app:app", "--host", "0.0.0.0", "--port", "8000"]
+      CLERK_ISSUER: ${CLERK_ISSUER:-}
+      CLERK_JWKS_URL: ${CLERK_JWKS_URL:-}
+    ports:
+      - "8001:8000"
     volumes:
       - blog_backend_data:/app/data
     depends_on:
@@ -144,7 +145,10 @@ services:
       context: ./blog-frontend
       args:
         VITE_API_URL: http://localhost:8001
+        VITE_CLERK_PUBLISHABLE_KEY: ${VITE_CLERK_PUBLISHABLE_KEY:-}
     container_name: blog-frontend
+    environment:
+      - VITE_CLERK_PUBLISHABLE_KEY=${VITE_CLERK_PUBLISHABLE_KEY:-}
     depends_on:
       - api-gateway
     ports:

@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import { useAuth } from "@clerk/clerk-react";
 import "../styles.css";
-import { apiRequest, clearAuthToken, getAuthToken } from "../lib/api";
+import { apiRequest, clearAuthToken, getAuthToken, setAuthToken } from "../lib/api";
 import { useTheme } from "../lib/theme";
 
 export default function Navbar({ alwaysSolid = false }) {
@@ -18,23 +19,38 @@ export default function Navbar({ alwaysSolid = false }) {
     return () => window.removeEventListener("scroll", fn);
   }, [alwaysSolid]);
 
+  const { isLoaded, isSignedIn, getToken, signOut } = useAuth();
+
   useEffect(() => {
-    if (!getAuthToken()) {
+    if (!isLoaded) {
       return;
     }
 
-    apiRequest("/api/users/me")
-      .then(setCurrentUser)
-      .catch(() => {
+    if (!isSignedIn) {
+      setCurrentUser(null);
+      return;
+    }
+
+    (async () => {
+      try {
+        const token = getAuthToken() || (await getToken());
+        if (token) {
+          setAuthToken(token);
+        }
+        const data = await apiRequest("/api/users/me");
+        setCurrentUser(data);
+      } catch {
         clearAuthToken();
         setCurrentUser(null);
-      });
-  }, []);
+      }
+    })();
+  }, [getToken, isLoaded, isSignedIn]);
 
-  function handleLogout() {
+  async function handleLogout() {
     clearAuthToken();
     setCurrentUser(null);
     setMenuOpen(false);
+    await signOut();
     window.location.href = "/";
   }
 

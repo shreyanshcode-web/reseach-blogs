@@ -1,6 +1,7 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+import { ClerkProvider } from '@clerk/clerk-react'
 
 import './creative.css'
 import './editorial.css'
@@ -28,12 +29,24 @@ import Signup from './pages/Signup.jsx'
 
 initializeTheme()
 
+const clerkPublishableKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY || ""
+function clerkNavigate(to) {
+  window.history.pushState(null, "", to)
+  window.dispatchEvent(new PopStateEvent("popstate"))
+}
+
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <BrowserRouter>
-      <RouteTransitionLoader>
+    <ClerkProvider publishableKey={clerkPublishableKey} navigate={clerkNavigate}>
+      <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Navigate to="/auth/login" replace />} />
+        <Route element={<AppShellLayout />}>
+          <Route path="/" element={<HomeFeedPage />} />
+          <Route path="/home" element={<HomeFeedPage />} />
+          <Route path="/search" element={<SearchPage />} />
+          <Route path="/profile/:username" element={<ProfilePage />} />
+          <Route path="/post/:id" element={<PostViewPage />} />
+        </Route>
 
           <Route element={<AppShellLayout />}>
             <Route path="/home" element={<HomeFeedPage />} />
@@ -74,5 +87,6 @@ createRoot(document.getElementById('root')).render(
         </Routes>
       </RouteTransitionLoader>
     </BrowserRouter>
+    </ClerkProvider>
   </StrictMode>,
 )

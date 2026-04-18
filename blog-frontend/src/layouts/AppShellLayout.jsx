@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, NavLink, Outlet } from "react-router-dom";
+import { useAuth } from "@clerk/clerk-react";
 
 import "../app-shell.css";
-import { apiRequest, clearAuthToken, getAuthToken } from "../lib/api";
+import { apiRequest, clearAuthToken, getAuthToken, setAuthToken } from "../lib/api";
 
 function navClassName({ isActive }) {
   return `app-shell__navlink${isActive ? " is-active" : ""}`;
@@ -12,21 +13,33 @@ export default function AppShellLayout() {
   const [currentUser, setCurrentUser] = useState(null);
   const [trending, setTrending] = useState([]);
   const [latest, setLatest] = useState([]);
-  const token = getAuthToken();
+  const { isLoaded, isSignedIn, getToken, signOut } = useAuth();
 
   useEffect(() => {
-    if (!token) {
+    if (!isLoaded) {
+      return;
+    }
+
+    if (!isSignedIn) {
+      clearAuthToken();
       setCurrentUser(null);
       return;
     }
 
-    apiRequest("/api/users/me")
-      .then(setCurrentUser)
-      .catch(() => {
+    (async () => {
+      try {
+        const token = await getToken();
+        if (token) {
+          setAuthToken(token);
+        }
+        const data = await apiRequest("/api/users/me");
+        setCurrentUser(data);
+      } catch {
         clearAuthToken();
         setCurrentUser(null);
-      });
-  }, [token]);
+      }
+    })();
+  }, [getToken, isLoaded, isSignedIn]);
 
   useEffect(() => {
     apiRequest("/api/analytics/weekly-top")
@@ -43,9 +56,10 @@ export default function AppShellLayout() {
     [currentUser],
   );
 
-  function handleLogout() {
+  async function handleLogout() {
     clearAuthToken();
-    window.location.href = "/auth/login";
+    await signOut();
+    window.location.href = "/";
   }
 
   return (

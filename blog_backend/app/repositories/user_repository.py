@@ -1,6 +1,6 @@
 from typing import Optional, Sequence
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.user import User
@@ -19,13 +19,19 @@ class UserRepository:
         return result.scalar_one_or_none()
 
     async def get_by_email(self, db: AsyncSession, email: str) -> Optional[User]:
-        result = await db.execute(select(User).where(User.email == email))
+        normalized_email = email.strip().lower()
+        result = await db.execute(
+            select(User).where(func.lower(User.email) == normalized_email)
+        )
         return result.scalar_one_or_none()
 
     async def get_by_username(
         self, db: AsyncSession, username: str
     ) -> Optional[User]:
-        result = await db.execute(select(User).where(User.username == username))
+        normalized_username = username.strip().lower()
+        result = await db.execute(
+            select(User).where(func.lower(User.username) == normalized_username)
+        )
         return result.scalar_one_or_none()
 
     async def get_all(

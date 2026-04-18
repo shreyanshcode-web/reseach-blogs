@@ -13,6 +13,7 @@
     "@blocknote/core": "^0.47.2",
     "@blocknote/mantine": "^0.47.2",
     "@blocknote/react": "^0.47.2",
+    "@clerk/clerk-react": "^5.0.0",
     "@react-spring/three": "^10.0.3",
     "@react-three/drei": "^10.7.7",
     "@react-three/fiber": "^9.5.0",

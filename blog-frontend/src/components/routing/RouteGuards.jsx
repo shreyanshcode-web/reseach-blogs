@@ -1,13 +1,20 @@
 import { Navigate, Outlet } from "react-router-dom";
-
-import { isAuthenticated } from "../../lib/auth";
+import { useAuth } from "@clerk/clerk-react";
 
 export function ProtectedRoute() {
-  return isAuthenticated() ? <Outlet /> : <Navigate to="/auth/login" replace />;
+  const { isLoaded, isSignedIn } = useAuth();
+  if (!isLoaded) {
+    return null;
+  }
+  return isSignedIn ? <Outlet /> : <Navigate to="/auth/login" replace />;
 }
 
 export function GuestOnlyRoute() {
-  return isAuthenticated() ? <Navigate to="/home" replace /> : <Outlet />;
+  const { isLoaded, isSignedIn } = useAuth();
+  if (!isLoaded) {
+    return null;
+  }
+  return isSignedIn ? <Navigate to="/home" replace /> : <Outlet />;
 }
 
 export function LandingRoute({ children }) {
