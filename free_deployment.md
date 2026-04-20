@@ -34,6 +34,7 @@ Because these platforms have tiny memory limits, I created a **[Dockerfile.monol
     - **Dockerfile Path**: `Dockerfile.monolith`.
     - **Plan**: Select the **Free** tier.
 5.  **Environment Variables**: Add the keys from your `.env.prod.example`.
+    -   **CRITICAL**: You must add `VITE_CLERK_PUBLISHABLE_KEY` in the Render dashboard under **Environment**. Render's Docker builder will use this to compile your frontend correctly.
 6.  **Deploy**: Render will build the monolith and give you a URL like `my-blog.onrender.com`.
 
 ---

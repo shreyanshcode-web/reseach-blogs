@@ -1,7 +1,12 @@
 # --- STAGE 1: Build Frontend ---
 FROM node:20-alpine AS frontend-build
 WORKDIR /app
-ARG VITE_API_URL=/ 
+ARG VITE_API_URL=/
+ARG VITE_CLERK_PUBLISHABLE_KEY 
+
+ENV VITE_API_URL=$VITE_API_URL
+ENV VITE_CLERK_PUBLISHABLE_KEY=$VITE_CLERK_PUBLISHABLE_KEY
+
 # In monolithic mode, the API is at the same origin
 COPY blog-frontend/package*.json ./
 RUN npm ci
