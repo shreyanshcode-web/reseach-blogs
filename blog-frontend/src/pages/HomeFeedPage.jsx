@@ -73,8 +73,10 @@ export default function HomeFeedPage() {
 
     loadTimeline();
 
-    const token = getValidAuthToken();
-    const apiBase = (import.meta.env.VITE_API_URL || "http://localhost:8001").replace(/^http/, "ws");
+    const apiBase = import.meta.env.VITE_API_URL 
+      ? import.meta.env.VITE_API_URL.replace(/^http/, "ws")
+      : `${window.location.protocol === "https:" ? "wss:" : "ws:"}//${window.location.host}`;
+    
     const socket = new WebSocket(`${apiBase}/ws/timeline${token ? `?token=${encodeURIComponent(token)}` : ""}`);
     socket.onmessage = (event) => {
       try {
