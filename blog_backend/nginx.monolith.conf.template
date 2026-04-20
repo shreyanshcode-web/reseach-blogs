@@ -16,29 +16,23 @@ http {
             try_files $uri /index.html;
         }
 
-        # API - Auth
-        location /api/users/ { proxy_pass http://127.0.0.1:8003; }
-        location /api/profile/ { proxy_pass http://127.0.0.1:8003; }
-        location /api/follows/ { proxy_pass http://127.0.0.1:8003; }
-
-        # API - Content
+        # Unified API Routing - All microservices are now merged into port 8000
+        location /api/users/ { proxy_pass http://127.0.0.1:8000; }
+        location /api/profile/ { proxy_pass http://127.0.0.1:8000; }
+        location /api/follows/ { proxy_pass http://127.0.0.1:8000; }
         location /api/posts/ { proxy_pass http://127.0.0.1:8000; }
         location /api/moderation/ { proxy_pass http://127.0.0.1:8000; }
-
-        # API - Analytics
-        location /api/analytics/ { proxy_pass http://127.0.0.1:8004; }
-
-        # API - Timeline
-        location /api/timeline/ { proxy_pass http://127.0.0.1:8005; }
+        location /api/analytics/ { proxy_pass http://127.0.0.1:8000; }
+        location /api/timeline/ { proxy_pass http://127.0.0.1:8000; }
+        
         location /ws/timeline {
-            proxy_pass http://127.0.0.1:8005;
+            proxy_pass http://127.0.0.1:8000;
             proxy_http_version 1.1;
             proxy_set_header Upgrade $http_upgrade;
             proxy_set_header Connection "upgrade";
         }
 
-        # API - Admin
-        location /api/admin/ { proxy_pass http://127.0.0.1:8006; }
-        location /api/ml/ { proxy_pass http://127.0.0.1:8006; }
+        location /api/admin/ { proxy_pass http://127.0.0.1:8000; }
+        location /api/ml/ { proxy_pass http://127.0.0.1:8000; }
     }
 }
