@@ -11,12 +11,13 @@ RUN npm run build
 # --- STAGE 2: Build Final Monolith ---
 FROM python:3.11-slim
 
-# Install dependencies for all services + Nginx + Redis + Supervisor
+# Install dependencies for all services + Nginx + Redis + Supervisor + envsubst
 RUN apt-get update && apt-get install -y \
     nginx \
     redis-server \
     supervisor \
     curl \
+    gettext-base \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
@@ -34,7 +35,9 @@ COPY --from=frontend-build /app/dist /usr/share/nginx/html
 
 # Setup Configs
 COPY blog_backend/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
-COPY blog_backend/nginx.monolith.conf /etc/nginx/nginx.conf
+COPY blog_backend/nginx.monolith.conf.template /etc/nginx/nginx.conf.template
+COPY entrypoint.sh /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh
 
 # Prepare Data Directory for SQLite
 RUN mkdir -p /app/data && chmod 777 /app/data
@@ -46,4 +49,4 @@ ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 ENV DATABASE_URL=sqlite+aiosqlite:///./data/blog.db
 
-CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
+ENTRYPOINT ["/app/entrypoint.sh"]
