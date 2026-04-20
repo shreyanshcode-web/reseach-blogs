@@ -1,5 +1,6 @@
 import { Navigate, Outlet } from "react-router-dom";
 import { useAuth } from "@clerk/clerk-react";
+import { isAuthenticated } from "../../lib/auth";
 
 export function ProtectedRoute() {
   const { isLoaded, isSignedIn } = useAuth();

@@ -21,11 +21,13 @@ function walkText(value, output) {
     output.push(value.caption);
   }
 
-  if (typeof value.content === "string") {
-    output.push(value.content);
-  }
-
-  Object.values(value).forEach((item) => walkText(item, output));
+  // Only walk into keys that contain user-generated content
+  const contentKeys = ["content", "children"];
+  contentKeys.forEach((key) => {
+    if (value[key]) {
+      walkText(value[key], output);
+    }
+  });
 }
 
 function findImageUrl(value) {

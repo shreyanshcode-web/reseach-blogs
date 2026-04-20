@@ -14,6 +14,7 @@ export default function AppShellLayout() {
   const [trending, setTrending] = useState([]);
   const [latest, setLatest] = useState([]);
   const { isLoaded, isSignedIn, getToken, signOut } = useAuth();
+  const hasAuthToken = Boolean(getAuthToken());
 
   useEffect(() => {
     if (!isLoaded) {
@@ -66,7 +67,7 @@ export default function AppShellLayout() {
     <div className="app-shell">
       <header className="app-shell__topbar">
         <div className="app-shell__topbar-inner">
-          <Link to={token ? "/home" : "/auth/login"} className="c-nav__logo">
+          <Link to={isSignedIn || hasAuthToken ? "/home" : "/auth/login"} className="c-nav__logo">
             The Making<span className="c-dot">.</span>Of
           </Link>
 
@@ -89,7 +90,7 @@ export default function AppShellLayout() {
           </nav>
 
           <div className="app-shell__actions">
-            {token ? (
+            {isSignedIn || hasAuthToken ? (
               <>
                 <Link to="/dashboard/settings" className="app-shell__button">
                   Settings
@@ -122,7 +123,7 @@ export default function AppShellLayout() {
                 16:9 hero panels, and no wasted left or right columns.
               </p>
               <div className="app-shell__meta">
-                <span className="app-shell__tag">{token ? `@${currentUser?.username || "creator"}` : "Guest session"}</span>
+                <span className="app-shell__tag">{isSignedIn || hasAuthToken ? `@${currentUser?.username || "creator"}` : "Guest session"}</span>
                 <span className="app-shell__tag">{trending.length} trending signals</span>
                 <span className="app-shell__tag">{latest.length} fresh stories loaded</span>
               </div>

@@ -1,17 +1,25 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 
 import { apiRequest } from "../lib/api";
 import { normalizePosts } from "../lib/posts";
 
 export default function SearchPage() {
-  const [query, setQuery] = useState("");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [query, setQuery] = useState(() => searchParams.get("q") || "");
   const [posts, setPosts] = useState([]);
+  const [status, setStatus] = useState("loading");
 
   useEffect(() => {
     apiRequest("/api/posts/search?limit=40")
-      .then((data) => setPosts(normalizePosts(data)))
-      .catch(() => setPosts([]));
+      .then((data) => {
+        setPosts(normalizePosts(data));
+        setStatus("ready");
+      })
+      .catch(() => {
+        setPosts([]);
+        setStatus("error");
+      });
   }, []);
 
   const filtered = useMemo(() => {
@@ -29,16 +37,22 @@ export default function SearchPage() {
   useEffect(() => {
     const controller = new AbortController();
     const timeout = window.setTimeout(() => {
+      setStatus("loading");
       const url = query.trim()
         ? `/api/posts/search?limit=40&q=${encodeURIComponent(query.trim())}`
         : "/api/posts/search?limit=40";
       apiRequest(url, {
         signal: controller.signal,
       })
-        .then((data) => setPosts(normalizePosts(data)))
+        .then((data) => {
+          setPosts(normalizePosts(data));
+          setStatus("ready");
+          setSearchParams(query.trim() ? { q: query.trim() } : {});
+        })
         .catch((error) => {
           if (error.name !== "AbortError") {
             setPosts([]);
+            setStatus("error");
           }
         });
     }, 200);
@@ -47,7 +61,7 @@ export default function SearchPage() {
       controller.abort();
       window.clearTimeout(timeout);
     };
-  }, [query]);
+  }, [query, setSearchParams]);
 
   return (
     <section className="ed-page">
@@ -73,6 +87,8 @@ export default function SearchPage() {
 
       <div className="ed-panel">
         <div className="ed-list">
+          {status === "loading" ? <div className="ed-muted">Loading search results...</div> : null}
+          {status === "error" ? <div className="ed-muted">Search is unavailable right now. Please try again.</div> : null}
           {filtered.map((post) => (
             <Link key={post.id} to={`/post/${post.id}`} className="ed-item">
               <div className="ed-meta" style={{ marginBottom: 10 }}>
@@ -84,7 +100,7 @@ export default function SearchPage() {
               <p className="ed-copy">{post.excerpt}</p>
             </Link>
           ))}
-          {!filtered.length ? <div className="ed-muted">No results yet for that search.</div> : null}
+          {status === "ready" && !filtered.length ? <div className="ed-muted">No results yet for that search.</div> : null}
         </div>
       </div>
     </section>

@@ -1,0 +1,49 @@
+# --- STAGE 1: Build Frontend ---
+FROM node:20-alpine AS frontend-build
+WORKDIR /app
+ARG VITE_API_URL=/ 
+# In monolithic mode, the API is at the same origin
+COPY blog-frontend/package*.json ./
+RUN npm ci
+COPY blog-frontend/ .
+RUN npm run build
+
+# --- STAGE 2: Build Final Monolith ---
+FROM python:3.11-slim
+
+# Install dependencies for all services + Nginx + Redis + Supervisor
+RUN apt-get update && apt-get install -y \
+    nginx \
+    redis-server \
+    supervisor \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Setup Backend
+COPY blog_backend/requirements.txt ./
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt
+
+COPY blog_backend/ .
+
+# Setup Frontend (from Stage 1)
+RUN mkdir -p /usr/share/nginx/html
+COPY --from=frontend-build /app/dist /usr/share/nginx/html
+
+# Setup Configs
+COPY blog_backend/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+COPY blog_backend/nginx.monolith.conf /etc/nginx/nginx.conf
+
+# Prepare Data Directory for SQLite
+RUN mkdir -p /app/data && chmod 777 /app/data
+
+EXPOSE 80
+
+# Environment Defaults
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+ENV DATABASE_URL=sqlite+aiosqlite:///./data/blog.db
+
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]

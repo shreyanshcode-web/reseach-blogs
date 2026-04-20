@@ -5,7 +5,17 @@ import { apiRequest } from "../lib/api";
 import { isAuthenticated } from "../lib/auth";
 import { normalizePosts } from "../lib/posts";
 
+function withProtocol(url) {
+  if (!url) {
+    return "";
+  }
+
+  return /^https?:\/\//i.test(url) ? url : `https://${url}`;
+}
+
 function ProfileStoryCard({ post }) {
+  const contentPreview = post.excerpt || post.plainText?.slice(0, 120) + "..." || "Open the story to read the full article.";
+  
   return (
     <Link to={`/post/${post.id}`} className="app-shell__story-card">
       <div className="app-shell__story-head">
@@ -13,7 +23,7 @@ function ProfileStoryCard({ post }) {
         <span>{new Date(post.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>
       </div>
       <h2 className="app-shell__story-title">{post.title}</h2>
-      <p className="app-shell__story-copy">{post.excerpt || "Open the story to read the full article."}</p>
+      <p className="app-shell__story-copy">{contentPreview}</p>
       <div className="app-shell__story-foot">
         {(post.tags || []).slice(0, 4).map((tag) => (
           <span key={tag} className="app-shell__tag">
@@ -30,6 +40,7 @@ export default function ProfilePage() {
   const [profile, setProfile] = useState(null);
   const [posts, setPosts] = useState([]);
   const [followState, setFollowState] = useState(null);
+  const [status, setStatus] = useState("");
 
   useEffect(() => {
     apiRequest(`/api/profile/${username}`)
@@ -44,7 +55,7 @@ export default function ProfilePage() {
   }, [username]);
 
   useEffect(() => {
-    if (!profile?.user_id) {
+    if (!profile?.user_id || !isAuthenticated()) {
       return;
     }
 
@@ -55,14 +66,18 @@ export default function ProfilePage() {
 
   function handleFollowToggle() {
     if (!profile?.user_id || !isAuthenticated()) {
+      setStatus("Sign in to follow creators.");
       return;
     }
 
     const method = followState?.is_following ? "DELETE" : "POST";
     apiRequest(`/api/follows/${profile.user_id}`, { method })
       .then(() => apiRequest(`/api/follows/status/${profile.user_id}`))
-      .then(setFollowState)
-      .catch(() => {});
+      .then((data) => {
+        setFollowState(data);
+        setStatus(data.is_following ? "You are now following this creator." : "You have unfollowed this creator.");
+      })
+      .catch((error) => setStatus(error.message || "Could not update follow state."));
   }
 
   const links = [
@@ -72,7 +87,9 @@ export default function ProfilePage() {
     profile?.linkedin_url,
     profile?.instagram_url,
     profile?.youtube_url,
-  ].filter(Boolean);
+  ]
+    .filter(Boolean)
+    .map(withProtocol);
 
   return (
     <>
@@ -117,6 +134,7 @@ export default function ProfilePage() {
             </a>
           ) : null}
         </div>
+        {status ? <p className="app-shell__section-copy" style={{ marginBottom: 0, marginTop: 18 }}>{status}</p> : null}
       </section>
 
       <section className="app-shell__profile-grid">

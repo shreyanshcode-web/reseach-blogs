@@ -1,4 +1,5 @@
-from fastapi import Depends, HTTPException, status
+import logging
+from fastapi import Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -8,6 +9,8 @@ from app.db.database import get_db
 from app.models.user import User
 from app.repositories.user_repository import user_repository
 from app.services.user_service import user_service
+
+logger = logging.getLogger(__name__)
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/users/login")
 oauth2_scheme_optional = OAuth2PasswordBearer(
@@ -34,18 +37,31 @@ async def _get_user_from_local_token(token: str, db: AsyncSession) -> User | Non
 
 
 async def _get_user_from_clerk_token(token: str, db: AsyncSession) -> User | None:
+    logger.info(f"Attempting to verify Clerk token, first 20 chars: {token[:20] if token else 'EMPTY'}")
     claims = verify_clerk_token(token)
     if not claims:
+        logger.warning("Clerk token verification failed - no claims returned")
         return None
 
+    # Try to get email, but Clerk default tokens only have 'sub'
     email = (claims.get("email") or "").strip().lower()
-    if not email:
+    clerk_id = claims.get("sub")
+    
+    if not email and not clerk_id:
+        logger.warning(f"No email or sub in claims: {list(claims.keys())}")
         return None
 
-    user = await user_repository.get_by_email(db, email)
-    if user:
-        return user
+    logger.info(f"Token verified for clerk_id: {clerk_id}, email: {email}")
+    
+    # Try finding by email if available
+    if email:
+        user = await user_repository.get_by_email(db, email)
+        if user:
+            logger.info(f"Found existing user for email: {email}")
+            return user
 
+    # Fallback to creating/getting user based on claims (will use sub if email missing)
+    logger.info(f"Getting or creating Clerk user for identifier: {email or clerk_id}")
     return await user_service.get_or_create_clerk_user(db, claims)
 
 

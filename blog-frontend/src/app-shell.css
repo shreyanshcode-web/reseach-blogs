@@ -29,12 +29,14 @@
 
 .app-shell__nav {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+  gap: 8px;
   min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none; /* Hide scrollbar for clean look */
 }
+.app-shell__nav::-webkit-scrollbar { display: none; }
 
 .app-shell__navlink {
   display: inline-flex;
@@ -108,12 +110,14 @@
 
 .app-shell__content {
   width: 100%;
+  max-width: 1440px;
+  margin: 0 auto;
   padding: 26px clamp(16px, 2vw, 28px) 34px;
 }
 
 .app-shell__hero-strip {
   display: grid;
-  grid-template-columns: minmax(0, 1.8fr) minmax(320px, 0.9fr);
+  grid-template-columns: 1.8fr 1fr;
   gap: 20px;
   margin-bottom: 24px;
 }
@@ -235,13 +239,17 @@
 
 .app-shell__body-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.65fr) minmax(320px, 0.95fr);
-  gap: 20px;
+  grid-template-columns: 1.6fr 0.9fr;
+  gap: 24px;
+  align-items: start;
+  width: 100%;
 }
 
 .app-shell__stack {
   display: grid;
   gap: 20px;
+  min-width: 0; /* Critical for preventing grid item overflow/overlap */
+  width: 100%;
 }
 
 .app-shell__stage-card {
@@ -279,11 +287,14 @@
 }
 
 .app-shell__metric-label {
-  font-size: 11px;
+  font-size: 10px;
   letter-spacing: 0.22em;
   text-transform: uppercase;
   color: var(--c-text-dim);
-  margin-bottom: 14px;
+  margin-bottom: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .app-shell__metric-value {
@@ -328,6 +339,25 @@
   letter-spacing: 0.12em;
   text-transform: uppercase;
   margin-bottom: 12px;
+}
+
+.app-shell__author-name {
+  color: var(--c-text-dim);
+  transition: color 0.3s var(--c-transition);
+}
+
+.app-shell__author-name:hover {
+  color: var(--c-accent);
+}
+
+.app-shell__author-link {
+  color: var(--c-text-dim);
+  text-decoration: none;
+  transition: color 0.3s var(--c-transition);
+}
+
+.app-shell__author-link:hover {
+  color: var(--c-accent);
 }
 
 .app-shell__story-title {
@@ -393,8 +423,10 @@
 .app-shell__profile-grid,
 .app-shell__dashboard-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.45fr) minmax(320px, 1fr);
-  gap: 20px;
+  grid-template-columns: 1.45fr 1fr;
+  gap: 24px;
+  align-items: start;
+  width: 100%;
 }
 
 .app-shell__surface {
@@ -456,19 +488,29 @@
     linear-gradient(180deg, var(--c-bg) 0%, var(--c-bg-alt) 48%, var(--c-bg) 100%);
 }
 
-@media (max-width: 1200px) {
+@media (max-width: 1300px) {
+  .app-shell__hero-strip,
+  .app-shell__body-grid {
+    grid-template-columns: 1.5fr 1fr;
+  }
+}
+
+@media (max-width: 1100px) {
   .app-shell__hero-strip,
   .app-shell__body-grid,
   .app-shell__profile-grid,
   .app-shell__dashboard-grid {
-    grid-template-columns: minmax(0, 1fr);
+    grid-template-columns: 1fr;
+  }
+
+  .app-shell__side-card {
+    display: none; /* Hide trending side strip on tablet to focus on hero */
   }
 
   .app-shell__metric-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(2, 1fr);
   }
 
-  .app-shell__side-card,
   .app-shell__stage-card--ratio,
   .app-shell__hero-card {
     aspect-ratio: auto;
@@ -477,32 +519,56 @@
 }
 
 @media (max-width: 780px) {
-  .app-shell__topbar-inner {
-    grid-template-columns: minmax(0, 1fr);
+  .app-shell__topbar {
+    padding: 12px 16px;
   }
 
-  .app-shell__nav,
+  .app-shell__topbar-inner {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .app-shell__nav {
+    justify-content: center;
+    overflow-x: auto;
+    white-space: nowrap;
+    padding-bottom: 4px;
+  }
+
+  .app-shell__navlink {
+    padding: 8px 12px;
+    font-size: 11px;
+    min-height: 36px;
+  }
+
   .app-shell__actions {
-    justify-content: flex-start;
+    justify-content: center;
+    width: 100%;
   }
 
   .app-shell__metric-grid {
-    grid-template-columns: minmax(0, 1fr);
+    grid-template-columns: 1fr;
   }
 
   .app-shell__content,
   .app-shell__dashboard-frame {
-    padding-inline: 12px;
+    padding: 16px 12px;
+    max-width: 100%;
   }
 
   .app-shell__hero-card,
   .app-shell__stage-card,
   .app-shell__side-card {
-    border-radius: 24px;
-    padding: 18px;
+    border-radius: 20px;
+    padding: 20px;
   }
 
   .app-shell__headline {
+    font-size: 32px;
     max-width: none;
+  }
+
+  .app-shell__section-title {
+    font-size: 20px;
   }
 }

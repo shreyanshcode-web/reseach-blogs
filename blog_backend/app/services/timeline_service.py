@@ -3,6 +3,7 @@ from __future__ import annotations
 from collections import Counter
 from datetime import datetime, timezone
 import math
+import logging
 
 from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -22,6 +23,7 @@ except Exception:  # pragma: no cover - optional dependency during local editing
 
 
 settings = get_settings()
+logger = logging.getLogger(__name__)
 
 
 class TimelineService:
@@ -303,9 +305,21 @@ class TimelineService:
 
     def _global_score(self, post: Post) -> float:
         created_at = post.created_at
+        
+        # Ensure we are working with a timezone-aware datetime for subtraction
         if created_at.tzinfo is None:
             created_at = created_at.replace(tzinfo=timezone.utc)
-        hours_since_publish = max((datetime.now(timezone.utc) - created_at).total_seconds() / 3600, 1.0)
+        
+        now = datetime.now(timezone.utc)
+        
+        try:
+            delta = now - created_at
+            hours_since_publish = max(delta.total_seconds() / 3600, 1.0)
+        except TypeError as e:
+            # Absolute fallback if somehow the types are still incompatible
+            logger.error(f"Timezone mismatch for post {post.id}: now={now.tzinfo}, created_at={created_at.tzinfo}. Error: {e}")
+            hours_since_publish = 1.0
+            
         recency_score = max(0.0, 72 - hours_since_publish) * 1.5
         engagement_score = (
             (post.like_count * 4.0)

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import { useAuth } from "@clerk/clerk-react";
 import { BlockNoteView } from "@blocknote/mantine";
 import {
   FormattingToolbarController,
@@ -11,7 +12,7 @@ import {
 
 import "../styles.css";
 import "../create-post.css";
-import { API_BASE, getAuthToken } from "../lib/api";
+import { API_BASE, getAuthToken, setAuthToken } from "../lib/api";
 import { useTheme } from "../lib/theme";
 import {
   blogEditorSchema,
@@ -83,13 +84,17 @@ function formatSavedTime(value) {
   });
 }
 
-function loadDraft() {
+function getDraftKey(draftId) {
+  return draftId ? `${DRAFT_KEY}-${draftId}` : DRAFT_KEY;
+}
+
+function loadDraft(draftId = null) {
   if (typeof window === "undefined") {
     return null;
   }
 
   try {
-    const stored = window.localStorage.getItem(DRAFT_KEY);
+    const stored = window.localStorage.getItem(getDraftKey(draftId));
     return stored ? JSON.parse(stored) : null;
   } catch {
     return null;
@@ -157,7 +162,11 @@ function buildPostPayload({ form, editorState, cover, serverId }) {
 }
 
 export default function CreatePost() {
-  const initialDraftRef = useRef(loadDraft());
+  const { postId } = useParams();
+  const navigate = useNavigate();
+  const { getToken, isLoaded, isSignedIn } = useAuth();
+  const draftId = postId || null;
+  const initialDraftRef = useRef(loadDraft(draftId));
   const fileInputRef = useRef(null);
   const coverInputRef = useRef(null);
   const { isDark, toggleTheme } = useTheme();
@@ -175,11 +184,33 @@ export default function CreatePost() {
     kind: initialDraftRef.current ? "info" : "",
     message: initialDraftRef.current ? "Draft restored from local storage." : "",
   });
-  const [serverId, setServerId] = useState(initialDraftRef.current?.serverId || null);
+  const [serverId, setServerId] = useState(
+    postId && Number.isFinite(Number(postId)) ? Number(postId) : initialDraftRef.current?.serverId || null,
+  );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [focusMode, setFocusMode] = useState(false);
   const [authorProfile, setAuthorProfile] = useState(null);
   const [dragState, setDragState] = useState(null);
+  const [postLoadError, setPostLoadError] = useState("");
+  const [isLoadingPost, setIsLoadingPost] = useState(Boolean(postId));
+  const [hasLoadedPost, setHasLoadedPost] = useState(false);
+
+  async function getEditorToken() {
+    if (isLoaded && isSignedIn) {
+      try {
+        const token = await getToken();
+        if (token) {
+          setAuthToken(token);
+          return token;
+        }
+      } catch {
+        // Fall back to stored token only if Clerk was not able to provide a fresh one.
+      }
+    }
+
+    const storedToken = getAuthToken();
+    return storedToken || "";
+  }
 
   const editor = useCreateBlockNote(
     {
@@ -226,35 +257,144 @@ export default function CreatePost() {
     });
   }
 
+  function restoreEditorContent(blocks) {
+    if (!editor || !Array.isArray(blocks) || blocks.length === 0) {
+      return;
+    }
+
+    editor.replaceBlocks(editor.document, blocks);
+    syncEditorState(editor);
+  }
+
+  function buildFormStateFromContent(content) {
+    const metadata = content?.metadata || {};
+
+    return {
+      title: metadata.title || "",
+      subtitle: metadata.subtitle || "",
+      description: metadata.description || "",
+      category: metadata.category || "Product",
+      tagsInput: Array.isArray(metadata.tags) ? metadata.tags.join(", ") : "",
+      authorName: metadata.author || "",
+    };
+  }
+
+  function buildCoverStateFromContent(content) {
+    const coverImage = content?.metadata?.coverImage;
+    return {
+      image: coverImage?.url || "",
+      offsetX: coverImage?.positionX || 0,
+      offsetY: coverImage?.positionY || 0,
+      zoom: coverImage?.zoom || 1,
+    };
+  }
+
   useEffect(() => {
     syncEditorState(editor);
   }, [editor]);
 
   useEffect(() => {
-    const token = getAuthToken();
-    if (!token) {
+    if (!postId || initialDraftRef.current || hasLoadedPost) {
       return;
     }
 
-    fetch(`${API_BASE}/api/users/me`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    })
-      .then((response) => (response.ok ? response.json() : null))
-      .then((data) => {
-        if (!data) {
-          return;
+    const parsedPostId = Number(postId);
+    if (!Number.isFinite(parsedPostId) || parsedPostId <= 0) {
+      setPostLoadError("Invalid post identifier.");
+      setIsLoadingPost(false);
+      return;
+    }
+
+    async function fetchPost() {
+      setIsLoadingPost(true);
+      setPostLoadError("");
+
+      const token = await getEditorToken();
+      if (!token) {
+        setPostLoadError("Sign in to load this post for editing.");
+        setIsLoadingPost(false);
+        return;
+      }
+
+      try {
+        const response = await fetch(`${API_BASE}/api/posts/${parsedPostId}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (!response.ok) {
+          const body = await response.json().catch(() => ({}));
+          const detail = body?.detail || response.statusText || "Unable to load the post.";
+          throw new Error(detail);
         }
 
-        setAuthorProfile(data);
+        const post = await response.json();
+        const content = post.content || {};
+        const blocks = Array.isArray(content.blocks) ? content.blocks : DEFAULT_BLOCKS;
+
         setForm((current) => ({
           ...current,
-          authorName: current.authorName || data.username || "",
+          title: post.title || current.title,
+          subtitle: content?.metadata?.subtitle || current.subtitle,
+          description: content?.metadata?.description || current.description,
+          category: content?.metadata?.category || current.category,
+          tagsInput: Array.isArray(content?.metadata?.tags) ? content.metadata.tags.join(", ") : current.tagsInput,
+          authorName: content?.metadata?.author || current.authorName,
         }));
+
+        setCover(buildCoverStateFromContent(content));
+        setServerId(parsedPostId);
+        restoreEditorContent(blocks);
+        setSaveState("saved");
+        setLastSavedAt(post.updated_at || new Date().toISOString());
+        setPublishState({ kind: "info", message: "Draft loaded for editing." });
+        setHasLoadedPost(true);
+      } catch (error) {
+        setPostLoadError(error.message || "Unable to load this post.");
+      } finally {
+        setIsLoadingPost(false);
+      }
+    }
+
+    fetchPost();
+  }, [editor, postId, hasLoadedPost, isLoaded, isSignedIn]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadAuthorProfile() {
+      const token = await getEditorToken();
+      if (!token) {
+        return;
+      }
+
+      fetch(`${API_BASE}/api/users/me`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       })
-      .catch(() => {});
-  }, []);
+        .then((response) => (response.ok ? response.json() : null))
+        .then((data) => {
+          if (!isMounted || !data) {
+            return;
+          }
+
+          setAuthorProfile(data);
+          setForm((current) => ({
+            ...current,
+            authorName: current.authorName || data.username || "",
+          }));
+        })
+        .catch(() => {});
+    }
+
+    loadAuthorProfile();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [isLoaded, isSignedIn]);
 
   useEffect(() => {
     const hasContent =
@@ -277,13 +417,11 @@ export default function CreatePost() {
         updatedAt: new Date().toISOString(),
       };
 
-      window.localStorage.setItem(DRAFT_KEY, JSON.stringify(storedDraft));
-      setLastSavedAt(storedDraft.updatedAt);
-      setSaveState((current) => (current === "publishing" ? current : "saved"));
-    }, 700);
+      window.localStorage.setItem(getDraftKey(serverId), JSON.stringify(storedDraft));
+    }, 1000);
 
     return () => window.clearTimeout(timeout);
-  }, [cover, editorState, form, serverId]);
+  }, [form, editorState, cover, serverId]);
 
   useEffect(() => {
     if (!dragState) {
@@ -423,18 +561,19 @@ export default function CreatePost() {
   }
 
   async function persistPost(published) {
-    const token = getAuthToken();
-    const payload = buildPostPayload({ form, editorState, cover, serverId });
+    const token = await getEditorToken();
 
     if (!token) {
       setPublishState({
         kind: "info",
         message: published
-          ? "Draft is safely stored locally. Add a saved auth token before publishing to the API."
+          ? "Please sign in to publish your post. Draft saved locally."
           : "Draft stored locally. Sign in to sync it with the backend.",
       });
       return null;
     }
+
+    const payload = buildPostPayload({ form, editorState, cover, serverId });
 
     const method = serverId ? "PUT" : "POST";
     const endpoint = serverId ? `${API_BASE}/api/posts/${serverId}` : `${API_BASE}/api/posts/`;
@@ -459,6 +598,17 @@ export default function CreatePost() {
       } catch {
         detail = response.statusText || detail;
       }
+      
+      // If credentials are invalid, clear the token and suggest signing in
+      if (response.status === 401 && detail.includes("credentials")) {
+        clearAuthToken();
+        setPublishState({
+          kind: "error",
+          message: "Your session has expired. Please sign in again to publish.",
+        });
+        return null;
+      }
+      
       throw new Error(detail);
     }
 
@@ -474,14 +624,16 @@ export default function CreatePost() {
       const result = await persistPost(published);
       if (result?.id) {
         setServerId(result.id);
+        window.localStorage.removeItem(getDraftKey(null));
       }
 
       if (published && result?.id) {
-        window.localStorage.removeItem(DRAFT_KEY);
+        window.localStorage.removeItem(getDraftKey(result.id));
         setPublishState({
           kind: "success",
           message: "Story published successfully and removed from local drafts.",
         });
+        navigate(`/post/${result.id}`);
       } else if (result?.id) {
         setPublishState({
           kind: "success",
@@ -515,128 +667,57 @@ export default function CreatePost() {
             : "Ready";
 
   return (
-    <div
-      className={[
-        "editor-page",
-        isDark ? "editor-page--dark" : "",
-        focusMode ? "editor-page--focus" : "",
-      ]
-        .filter(Boolean)
-        .join(" ")}
-    >
-      <nav className="nav nav--solid">
-        <Link to="/" className="logo">
-          The Making<span>.</span>Of
-        </Link>
-        <div className="nav-links">
-          <Link to="/dashboard">Dashboard</Link>
-          <Link to="/home">Home</Link>
-        </div>
-      </nav>
+    <div className={`editor-page${isDark ? " editor-page--dark" : ""}${focusMode ? " editor-page--focus" : ""}`}>
+      <input ref={fileInputRef} type="file" accept="image/*" className="editor-hidden-input" onChange={handleInlineImageUpload} />
+      <input ref={coverInputRef} type="file" accept="image/*" className="editor-hidden-input" onChange={handleCoverChange} />
 
       <div className="editor-shell">
         <div className="editor-grid">
-          <aside className="editor-sidebar">
-            <h3>Workspace</h3>
-            <div className="editor-status-row">
-              <div className="editor-status-pill">
-                <strong>{statusLabel}</strong>
-                <span className="editor-muted">Last local save {formatSavedTime(lastSavedAt)}</span>
-              </div>
-              <div className="editor-status-pill">
-                <strong>{serverId ? `Post #${serverId}` : "Unsynced"}</strong>
-                <span className="editor-muted">
-                  {authorProfile?.username ? `by ${authorProfile.username}` : "local draft only"}
-                </span>
-              </div>
-            </div>
-
-            <div className="editor-toggle-row">
-              <div className="editor-toggle">
-                <div>
-                  <strong>Focus mode</strong>
-                  <p className="editor-muted">Hide side panels for distraction-free writing.</p>
-                </div>
-                <button
-                  type="button"
-                  className={`editor-switch ${focusMode ? "editor-switch--active" : ""}`}
-                  onClick={() => setFocusMode((current) => !current)}
-                />
-              </div>
-              <div className="editor-toggle">
-                <div>
-                  <strong>Dark mode</strong>
-                  <p className="editor-muted">Flip the writing surface for late-night sessions.</p>
-                </div>
-                <button
-                  type="button"
-                    className={`editor-switch ${isDark ? "editor-switch--active" : ""}`}
-                    onClick={toggleTheme}
-                  />
-                </div>
-              </div>
-
-            <h3>Live stats</h3>
-            <div className="editor-stat-grid">
-              <div className="editor-stat">
-                <strong>{editorState.wordCount}</strong>
-                <span>Words</span>
-              </div>
-              <div className="editor-stat">
-                <strong>{editorState.readingMinutes}</strong>
-                <span>Minutes</span>
-              </div>
-              <div className="editor-stat">
-                <strong>{editorState.blocks.length}</strong>
-                <span>Blocks</span>
-              </div>
-              <div className="editor-stat">
-                <strong>{tags.length || 0}</strong>
-                <span>Tags</span>
-              </div>
-            </div>
-
-            <h3>Publishing notes</h3>
-            <ul className="editor-sidebar-list">
-              <li>Use `/` to open Notion-style block insertion anywhere in the editor.</li>
-              <li>Paste images directly, drag blocks with the side handle, and resize media inline.</li>
-              <li>YouTube links pasted into the editor turn into responsive embedded video blocks.</li>
-              <li>Autosave stores a recoverable draft locally even when the API is unavailable.</li>
-            </ul>
-          </aside>
-
-          <section className="editor-column">
+          <main className="editor-column">
             <div className="editor-meta-bar">
               <div>
-                <span className="editor-kicker">Notion-style Editor</span>
-                <h1>Craft the story.</h1>
+                <span className="editor-kicker">{serverId ? "Edit Story" : "New Story"}</span>
+                <h1>{form.title.trim() || "Shape your next blog post"}</h1>
                 <p>
-                  Shape long-form posts with block editing, cover art, inline embeds, real-time preview,
-                  and autosave designed for a modern publishing flow.
+                  Build, revise, and publish from one place. This editor now supports local draft recovery, backend sync,
+                  cover image framing, and live post publishing.
                 </p>
               </div>
+
               <div className="editor-actions">
-                <button type="button" className="editor-button--ghost" onClick={() => handleSubmit(false)}>
+                <button type="button" className="editor-button--ghost" onClick={() => setFocusMode((current) => !current)}>
+                  {focusMode ? "Exit Focus Mode" : "Enter Focus Mode"}
+                </button>
+                <button type="button" className="editor-button--ghost" onClick={toggleTheme}>
+                  {isDark ? "Light Surface" : "Dark Surface"}
+                </button>
+                <button type="button" className="editor-button--ghost" disabled={isSubmitting} onClick={() => handleSubmit(false)}>
                   Save Draft
                 </button>
-                <button
-                  type="button"
-                  className="editor-button"
-                  onClick={() => handleSubmit(true)}
-                  disabled={isSubmitting}
-                >
+                <button type="button" className="editor-button" disabled={isSubmitting} onClick={() => handleSubmit(true)}>
                   {isSubmitting ? "Publishing..." : "Publish Story"}
                 </button>
               </div>
             </div>
 
             <div className="editor-content">
-              <div className="editor-panel">
+              {postLoadError ? <div className="editor-panel">{postLoadError}</div> : null}
+              {publishState.message ? (
+                <div className="editor-panel" style={{ borderColor: publishState.kind === "error" ? "rgba(185, 28, 28, 0.32)" : undefined }}>
+                  {publishState.message}
+                </div>
+              ) : null}
+
+              <section className="editor-panel">
+                <h2>Story Setup</h2>
                 <div className="editor-cover">
                   {cover.image ? (
                     <img
                       src={cover.image}
-                      alt="Post cover"
+                      alt="Cover preview"
+                      style={{
+                        transform: `translate(${cover.offsetX}px, ${cover.offsetY}px) scale(${cover.zoom})`,
+                      }}
                       onPointerDown={(event) =>
                         setDragState({
                           startX: event.clientX,
@@ -645,28 +726,19 @@ export default function CreatePost() {
                           initialOffsetY: cover.offsetY,
                         })
                       }
-                      style={{
-                        transform: `scale(${cover.zoom}) translate(${cover.offsetX}px, ${cover.offsetY}px)`,
-                      }}
                     />
                   ) : (
                     <div className="editor-upload-empty">
-                      Upload a cover image to set the tone for the article. You can replace, remove, and drag the
-                      crop after upload.
+                      Add a cover image so the post feels complete in feeds, previews, and profile listings.
                     </div>
                   )}
+
                   <div className="editor-cover-overlay">
-                    {cover.image ? (
-                      <div className="editor-cover-hint">Drag the image to reposition the focal point.</div>
-                    ) : (
-                      <div />
-                    )}
+                    <div className="editor-cover-hint">
+                      {cover.image ? "Drag the image to reposition it inside the frame." : "Upload a wide image for the cleanest crop."}
+                    </div>
                     <div className="editor-cover-actions">
-                      <button
-                        type="button"
-                        className="editor-button--ghost"
-                        onClick={() => coverInputRef.current?.click()}
-                      >
+                      <button type="button" className="editor-button--ghost" onClick={() => coverInputRef.current?.click()}>
                         {cover.image ? "Replace Cover" : "Upload Cover"}
                       </button>
                       {cover.image ? (
@@ -675,231 +747,244 @@ export default function CreatePost() {
                           className="editor-button--ghost"
                           onClick={() => setCover({ image: "", offsetX: 0, offsetY: 0, zoom: 1 })}
                         >
-                          Remove
+                          Remove Cover
                         </button>
                       ) : null}
                     </div>
                   </div>
                 </div>
 
-                {cover.image ? (
-                  <div className="editor-cover-slider">
-                    <label htmlFor="coverZoom">Cover zoom</label>
-                    <input
-                      id="coverZoom"
-                      type="range"
-                      min="1"
-                      max="1.6"
-                      step="0.01"
-                      value={cover.zoom}
-                      onChange={(event) =>
-                        setCover((current) => ({
-                          ...current,
-                          zoom: Number(event.target.value),
-                        }))
-                      }
+                <div className="editor-cover-slider">
+                  <label htmlFor="cover-zoom">Cover Zoom</label>
+                  <input
+                    id="cover-zoom"
+                    type="range"
+                    min="1"
+                    max="1.8"
+                    step="0.01"
+                    value={cover.zoom}
+                    onChange={(event) =>
+                      setCover((current) => ({
+                        ...current,
+                        zoom: Number(event.target.value),
+                      }))
+                    }
+                  />
+                </div>
+
+                <div className="editor-meta-grid" style={{ marginTop: 20 }}>
+                  <div className="editor-field editor-field--full">
+                    <label htmlFor="story-title">Title</label>
+                    <textarea
+                      id="story-title"
+                      className="editor-title-input"
+                      rows={2}
+                      value={form.title}
+                      onChange={(event) => updateForm("title", event.target.value)}
+                      placeholder="Write the headline readers will remember"
                     />
                   </div>
-                ) : null}
-              </div>
 
-              <div className="editor-panel">
-                <div className="editor-field editor-field--full">
-                  <label htmlFor="title">Title</label>
-                  <textarea
-                    id="title"
-                    className="editor-title-input"
-                    rows={2}
-                    value={form.title}
-                    placeholder="Give the post a magnetic title"
-                    onChange={(event) => updateForm("title", event.target.value)}
-                  />
-                </div>
+                  <div className="editor-field editor-field--full">
+                    <label htmlFor="story-subtitle">Subtitle</label>
+                    <textarea
+                      id="story-subtitle"
+                      className="editor-subtitle-input"
+                      rows={3}
+                      value={form.subtitle}
+                      onChange={(event) => updateForm("subtitle", event.target.value)}
+                      placeholder="Summarize the angle, stakes, or takeaway in one sharp sentence."
+                    />
+                  </div>
 
-                <div className="editor-field editor-field--full">
-                  <label htmlFor="subtitle">Subtitle</label>
-                  <textarea
-                    id="subtitle"
-                    className="editor-subtitle-input"
-                    rows={2}
-                    value={form.subtitle}
-                    placeholder="Add a concise subtitle or standfirst that frames the piece"
-                    onChange={(event) => updateForm("subtitle", event.target.value)}
-                  />
-                </div>
+                  <div className="editor-field editor-field--full">
+                    <label htmlFor="story-description">Description</label>
+                    <textarea
+                      id="story-description"
+                      rows={4}
+                      value={form.description}
+                      onChange={(event) => updateForm("description", event.target.value)}
+                      placeholder="Short summary for previews, search, and SEO."
+                    />
+                  </div>
 
-                <div className="editor-meta-grid">
                   <div className="editor-field">
-                    <label htmlFor="category">Category</label>
-                    <select
-                      id="category"
-                      value={form.category}
-                      onChange={(event) => updateForm("category", event.target.value)}
-                    >
-                      <option>Product</option>
-                      <option>Engineering</option>
-                      <option>Design</option>
-                      <option>AI</option>
-                      <option>Culture</option>
+                    <label htmlFor="story-category">Category</label>
+                    <select id="story-category" value={form.category} onChange={(event) => updateForm("category", event.target.value)}>
+                      {["Product", "Engineering", "Design", "Culture", "Story", "Tutorial", "Opinion"].map((option) => (
+                        <option key={option} value={option}>
+                          {option}
+                        </option>
+                      ))}
                     </select>
                   </div>
 
                   <div className="editor-field">
-                    <label htmlFor="authorName">Author</label>
+                    <label htmlFor="story-author">Author Name</label>
                     <input
-                      id="authorName"
+                      id="story-author"
                       value={form.authorName}
-                      placeholder="Author name"
                       onChange={(event) => updateForm("authorName", event.target.value)}
+                      placeholder={authorProfile?.username || "Author name"}
                     />
                   </div>
 
                   <div className="editor-field editor-field--full">
-                    <label htmlFor="description">Description</label>
-                    <textarea
-                      id="description"
-                      rows={3}
-                      value={form.description}
-                      placeholder="A short description for cards, SEO snippets, and feed previews"
-                      onChange={(event) => updateForm("description", event.target.value)}
-                    />
-                  </div>
-
-                  <div className="editor-field editor-field--full">
-                    <label htmlFor="tags">Tags</label>
+                    <label htmlFor="story-tags">Tags</label>
                     <input
-                      id="tags"
+                      id="story-tags"
                       value={form.tagsInput}
-                      placeholder="notion-style, editor, product-design"
                       onChange={(event) => updateForm("tagsInput", event.target.value)}
+                      placeholder="react, writing, product, backend"
                     />
                   </div>
                 </div>
-              </div>
+              </section>
 
-              <div className="editor-panel">
-                <h2>Quick insert</h2>
+              <section className="editor-panel">
+                <h2>Writing Workspace</h2>
                 <div className="editor-toolbar">
-                  <button type="button" className="editor-chip" onClick={() => handleToolbarAction("h1")}>
-                    H1
-                  </button>
-                  <button type="button" className="editor-chip" onClick={() => handleToolbarAction("h2")}>
-                    H2
-                  </button>
-                  <button type="button" className="editor-chip" onClick={() => handleToolbarAction("h3")}>
-                    H3
-                  </button>
-                  <button type="button" className="editor-chip" onClick={() => handleToolbarAction("bullet")}>
-                    Bullet list
-                  </button>
-                  <button type="button" className="editor-chip" onClick={() => handleToolbarAction("quote")}>
-                    Callout
-                  </button>
-                  <button type="button" className="editor-chip" onClick={() => handleToolbarAction("code")}>
-                    Code block
-                  </button>
-                  <button type="button" className="editor-chip" onClick={() => handleToolbarAction("image")}>
-                    Image
-                  </button>
-                  <button type="button" className="editor-chip" onClick={() => handleToolbarAction("video")}>
-                    YouTube
-                  </button>
+                  {[
+                    ["h1", "H1"],
+                    ["h2", "H2"],
+                    ["h3", "H3"],
+                    ["quote", "Quote"],
+                    ["code", "Code"],
+                    ["bullet", "List"],
+                    ["image", "Image"],
+                    ["video", "YouTube"],
+                  ].map(([action, label]) => (
+                    <button key={action} type="button" className="editor-chip" onClick={() => handleToolbarAction(action)}>
+                      {label}
+                    </button>
+                  ))}
                 </div>
 
                 <div className="editor-workspace">
                   <BlockNoteView
                     editor={editor}
-                    theme={isDark ? "dark" : "light"}
+                    slashMenu={false}
                     onChange={() => syncEditorState(editor)}
-                    formattingToolbar={false}
-                    linkToolbar={false}
-                    sideMenu={false}
                   >
                     <FormattingToolbarController />
                     <LinkToolbarController />
                     <SideMenuController />
-                    <SuggestionMenuController triggerCharacter="/" getItems={getBlogSlashMenuItems(editor)} />
+                    <SuggestionMenuController triggerCharacter="/" getItems={async (query) => getBlogSlashMenuItems(editor, query)} />
                   </BlockNoteView>
                 </div>
-              </div>
-
-              {publishState.message ? (
-                <div className="editor-panel">
-                  <div className="editor-status-pill">
-                    <strong>{publishState.kind || "info"}</strong>
-                    <span className="editor-muted">{publishState.message}</span>
-                  </div>
-                </div>
-              ) : null}
+              </section>
             </div>
-          </section>
+          </main>
+
+          <aside className="editor-sidebar">
+            <h3>Publishing Status</h3>
+            <div className="editor-status-row">
+              <div className="editor-status-pill">
+                <strong>{statusLabel}</strong>
+                <span className="editor-muted">Last saved: {formatSavedTime(lastSavedAt)}</span>
+              </div>
+              <div className="editor-status-pill">
+                <strong>{serverId ? `Server ID #${serverId}` : "Local draft only"}</strong>
+                <span className="editor-muted">
+                  {serverId ? "This story is connected to the backend." : "Sign in and save to sync it to the API."}
+                </span>
+              </div>
+            </div>
+
+            <div className="editor-toggle-row" style={{ marginTop: 20 }}>
+              <div className="editor-toggle">
+                <div>
+                  <strong>Focus mode</strong>
+                  <div className="editor-muted">Hide the side rails while you write.</div>
+                </div>
+                <button
+                  type="button"
+                  className={`editor-switch${focusMode ? " editor-switch--active" : ""}`}
+                  onClick={() => setFocusMode((current) => !current)}
+                  aria-label="Toggle focus mode"
+                />
+              </div>
+              <div className="editor-toggle">
+                <div>
+                  <strong>Theme</strong>
+                  <div className="editor-muted">{isDark ? "Dark editing surface is active." : "Light editing surface is active."}</div>
+                </div>
+                <button
+                  type="button"
+                  className={`editor-switch${isDark ? " editor-switch--active" : ""}`}
+                  onClick={toggleTheme}
+                  aria-label="Toggle editor theme"
+                />
+              </div>
+            </div>
+
+            <div className="editor-stat-grid" style={{ marginTop: 20 }}>
+              <div className="editor-stat">
+                <strong>{editorState.wordCount}</strong>
+                <span>Words</span>
+              </div>
+              <div className="editor-stat">
+                <strong>{editorState.readingMinutes}</strong>
+                <span>Read time</span>
+              </div>
+              <div className="editor-stat">
+                <strong>{tags.length}</strong>
+                <span>Tags</span>
+              </div>
+              <div className="editor-stat">
+                <strong>{cover.image ? "Yes" : "No"}</strong>
+                <span>Cover set</span>
+              </div>
+            </div>
+
+            <ul className="editor-sidebar-list" style={{ marginTop: 20, paddingLeft: 0 }}>
+              <li>Autosave writes to local storage while you work so accidental refreshes do not wipe your progress.</li>
+              <li>Save Draft syncs to the backend without publishing, which makes it appear in your draft shelf.</li>
+              <li>Publish Story sends the post live so it can appear in feeds, profile pages, and dashboards.</li>
+            </ul>
+
+            {serverId ? (
+              <div className="editor-status-row" style={{ marginTop: 20 }}>
+                <Link to={`/post/${serverId}`} className="editor-button--ghost">
+                  Open Published View
+                </Link>
+              </div>
+            ) : null}
+          </aside>
 
           <aside className="editor-preview">
-            <h3>Live preview</h3>
+            <h3>Live Preview</h3>
             <div className="editor-preview-card">
-              {cover.image ? (
-                <img
-                  src={cover.image}
-                  alt="Cover preview"
-                  style={{
-                    transform: `scale(${cover.zoom}) translate(${cover.offsetX}px, ${cover.offsetY}px)`,
-                  }}
-                />
-              ) : null}
-
+              {cover.image ? <img src={cover.image} alt="Story cover preview" /> : null}
               <div className="editor-preview-body">
                 <div className="editor-preview-meta">
-                  {form.category} {authorProfile?.username ? `• ${authorProfile.username}` : ""}
+                  {form.category} {form.authorName ? `· ${form.authorName}` : ""}
                 </div>
-                <h2>{form.title || "Untitled story"}</h2>
-                <p>{form.subtitle || form.description || "A subtle subtitle or preview description will appear here."}</p>
-
-                {tags.length > 0 ? (
+                <h2>{form.title.trim() || "Your headline appears here"}</h2>
+                <p>{form.subtitle.trim() || form.description.trim() || "Your subtitle and summary will appear here as you write."}</p>
+                {tags.length ? (
                   <div className="editor-tag-row">
-                    {tags.map((tag) => (
-                      <span className="editor-tag" key={tag}>
+                    {tags.slice(0, 6).map((tag) => (
+                      <span key={tag} className="editor-tag">
                         #{tag}
                       </span>
                     ))}
                   </div>
                 ) : null}
-
                 <div
                   className="editor-preview-render"
-                  dangerouslySetInnerHTML={{ __html: editorState.html }}
+                  dangerouslySetInnerHTML={{
+                    __html:
+                      editorState.html && editorState.html !== "<p></p>"
+                        ? editorState.html
+                        : "<p>Start writing in the editor and your live preview will appear here.</p>",
+                  }}
                 />
               </div>
-            </div>
-
-            <div style={{ height: 18 }} />
-
-            <div className="editor-panel">
-              <h2>Scales well with</h2>
-              <ul className="editor-sidebar-list">
-                <li>Server-side draft persistence keyed by post id and user id.</li>
-                <li>S3 or Cloudinary uploads by swapping the local `uploadFile` handler for signed URLs.</li>
-                <li>Rendered HTML caching from the stored block JSON for fast public post delivery.</li>
-                <li>Realtime collaboration or AI suggestions through BlockNote extensions on the same schema.</li>
-              </ul>
             </div>
           </aside>
         </div>
       </div>
-
-      <input
-        ref={coverInputRef}
-        className="editor-hidden-input"
-        type="file"
-        accept="image/*"
-        onChange={handleCoverChange}
-      />
-      <input
-        ref={fileInputRef}
-        className="editor-hidden-input"
-        type="file"
-        accept="image/*"
-        onChange={handleInlineImageUpload}
-      />
     </div>
   );
 }

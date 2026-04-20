@@ -1,0 +1,66 @@
+services:
+  # UI-managed Reverse Proxy for SSL/HTTPS
+  nginx-proxy:
+    image: 'jc21/nginx-proxy-manager:latest'
+    container_name: blog-proxy-manager
+    restart: unless-stopped
+    ports:
+      - '80:80' # Public HTTP
+      - '81:81' # Proxy Manager Admin UI
+      - '443:443' # Public HTTPS
+    volumes:
+      - ./infra/proxy/data:/data
+      - ./infra/proxy/letsencrypt:/etc/letsencrypt
+
+  redis:
+    image: redis:7-alpine
+    container_name: blog-redis-prod
+    restart: always
+    volumes:
+      - blog_redis_data:/data
+
+  auth-service:
+    image: ghcr.io/${GITHUB_REPOSITORY_OWNER}/blog-auth-service:latest
+    container_name: blog-auth-prod
+    restart: always
+    environment:
+      DATABASE_URL: sqlite+aiosqlite:///./data/blog.db
+      SECRET_KEY: ${SECRET_KEY}
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      REDIS_URL: redis://redis:6379/0
+      CLERK_JWKS_URL: ${CLERK_JWKS_URL}
+    volumes:
+      - blog_data:/app/data
+
+  content-service:
+    image: ghcr.io/${GITHUB_REPOSITORY_OWNER}/blog-content-service:latest
+    container_name: blog-content-prod
+    restart: always
+    environment:
+      DATABASE_URL: sqlite+aiosqlite:///./data/blog.db
+      SECRET_KEY: ${SECRET_KEY}
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      REDIS_URL: redis://redis:6379/0
+    volumes:
+      - blog_data:/app/data
+
+  api-gateway:
+    image: nginx:1.27-alpine
+    container_name: blog-api-gateway-prod
+    restart: always
+    volumes:
+      - ./blog_backend/nginx.gateway.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - auth-service
+      - content-service
+
+  frontend:
+    image: ghcr.io/${GITHUB_REPOSITORY_OWNER}/blog-frontend:latest
+    container_name: blog-frontend-prod
+    restart: always
+    depends_on:
+      - api-gateway
+
+volumes:
+  blog_data:
+  blog_redis_data:

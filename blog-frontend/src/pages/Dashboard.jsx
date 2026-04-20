@@ -128,9 +128,9 @@ export default function Dashboard() {
           </div>
           <div className="app-shell__metric-card">
             <div className="app-shell__metric-label">Followers</div>
-            <div className="app-shell__metric-value">{loading ? "..." : stats?.followers_total ?? 0}</div>
+            <div className="app-shell__metric-value">{loading ? "..." : stats?.followers?.total_followers ?? 0}</div>
             <div className="app-shell__metric-note">
-              {loading ? "Loading follower movement." : `${stats?.followers_gained_this_week ?? 0} gained this week.`}
+              {loading ? "Loading follower movement." : `${stats?.followers?.gained_this_week ?? 0} gained this week.`}
             </div>
           </div>
           <div className="app-shell__metric-card">
@@ -142,7 +142,7 @@ export default function Dashboard() {
             <div className="app-shell__metric-label">Engagement</div>
             <div className="app-shell__metric-value">{loading ? "..." : stats?.total_engagements ?? 0}</div>
             <div className="app-shell__metric-note">
-              {loading ? "Loading post reactions." : `${stats?.average_engagement_rate ?? 0}% average engagement rate.`}
+              {loading ? "Loading post reactions." : `${stats?.avg_engagement_rate ?? 0}% average engagement rate.`}
             </div>
           </div>
         </div>

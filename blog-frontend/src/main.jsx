@@ -1,4 +1,4 @@
-import { StrictMode } from 'react'
+import { Suspense, StrictMode, lazy } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { ClerkProvider } from '@clerk/clerk-react'
@@ -12,20 +12,22 @@ import AuthLayout from './layouts/AuthLayout.jsx'
 import DashboardLayout from './layouts/DashboardLayout.jsx'
 import EditorLayout from './layouts/EditorLayout.jsx'
 import { initializeTheme } from './lib/theme.js'
-import CreatePost from './pages/CreatePost.jsx'
-import CreativeLanding from './pages/CreativeLanding.jsx'
-import Dashboard from './pages/Dashboard.jsx'
-import DashboardDraftsPage from './pages/DashboardDraftsPage.jsx'
-import DashboardSettingsPage from './pages/DashboardSettingsPage.jsx'
-import HeroPage from './pages/HeroPage.jsx'
-import HomeFeedPage from './pages/HomeFeedPage.jsx'
-import LandingPage from './pages/LandingPage.jsx'
-import Login from './pages/Login.jsx'
-import NotFoundPage from './pages/NotFoundPage.jsx'
-import PostViewPage from './pages/PostViewPage.jsx'
-import ProfilePage from './pages/ProfilePage.jsx'
-import SearchPage from './pages/SearchPage.jsx'
-import Signup from './pages/Signup.jsx'
+
+const CreatePost = lazy(() => import('./pages/CreatePost.jsx'))
+const CreativeLanding = lazy(() => import('./pages/CreativeLanding.jsx'))
+const Dashboard = lazy(() => import('./pages/Dashboard.jsx'))
+const DashboardDraftsPage = lazy(() => import('./pages/DashboardDraftsPage.jsx'))
+const DashboardSettingsPage = lazy(() => import('./pages/DashboardSettingsPage.jsx'))
+const HeroPage = lazy(() => import('./pages/HeroPage.jsx'))
+const HomeFeedPage = lazy(() => import('./pages/HomeFeedPage.jsx'))
+const LandingPage = lazy(() => import('./pages/LandingPage.jsx'))
+const Login = lazy(() => import('./pages/Login.jsx'))
+const NotFoundPage = lazy(() => import('./pages/NotFoundPage.jsx'))
+const PostViewPage = lazy(() => import('./pages/PostViewPage.jsx'))
+const ProfilePage = lazy(() => import('./pages/ProfilePage.jsx'))
+const SearchPage = lazy(() => import('./pages/SearchPage.jsx'))
+const Signup = lazy(() => import('./pages/Signup.jsx')
+)
 
 initializeTheme()
 
@@ -35,58 +37,59 @@ function clerkNavigate(to) {
   window.dispatchEvent(new PopStateEvent("popstate"))
 }
 
+function RouteFallback() {
+  return <div className="app-shell__empty">Loading page...</div>
+}
+
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <ClerkProvider publishableKey={clerkPublishableKey} navigate={clerkNavigate}>
       <BrowserRouter>
-        <Routes>
-        <Route element={<AppShellLayout />}>
-          <Route path="/" element={<HomeFeedPage />} />
-          <Route path="/home" element={<HomeFeedPage />} />
-          <Route path="/search" element={<SearchPage />} />
-          <Route path="/profile/:username" element={<ProfilePage />} />
-          <Route path="/post/:id" element={<PostViewPage />} />
-        </Route>
+        <RouteTransitionLoader>
+          <Suspense fallback={<RouteFallback />}>
+            <Routes>
+              <Route element={<AppShellLayout />}>
+                <Route index element={<HomeFeedPage />} />
+                <Route path="home" element={<HomeFeedPage />} />
+                <Route path="search" element={<SearchPage />} />
+                <Route path="profile/:username" element={<ProfilePage />} />
+                <Route path="post/:id" element={<PostViewPage />} />
 
-          <Route element={<AppShellLayout />}>
-            <Route path="/home" element={<HomeFeedPage />} />
-            <Route path="/search" element={<SearchPage />} />
-            <Route path="/profile/:username" element={<ProfilePage />} />
-            <Route path="/post/:id" element={<PostViewPage />} />
-          </Route>
+                <Route path="creative" element={<CreativeLanding />} />
+                <Route path="classic" element={<LandingPage />} />
+                <Route path="hero" element={<HeroPage />} />
 
-          <Route path="/creative" element={<CreativeLanding />} />
-          <Route path="/classic" element={<LandingPage />} />
-          <Route path="/hero" element={<HeroPage />} />
+                <Route element={<ProtectedRoute />}>
+                  <Route element={<EditorLayout />}>
+                    <Route path="editor" element={<CreatePost />} />
+                    <Route path="editor/:postId" element={<CreatePost />} />
+                  </Route>
+                  <Route path="dashboard" element={<DashboardLayout />}>
+                    <Route index element={<Navigate to="/dashboard/posts" replace />} />
+                    <Route path="posts" element={<Dashboard />} />
+                    <Route path="drafts" element={<DashboardDraftsPage />} />
+                    <Route path="settings" element={<DashboardSettingsPage />} />
+                  </Route>
+                </Route>
 
-          <Route element={<GuestOnlyRoute />}>
-            <Route element={<AuthLayout />}>
-              <Route path="/auth/login" element={<Login />} />
-              <Route path="/auth/signup" element={<Signup />} />
-            </Route>
-          </Route>
+                <Route path="create-post" element={<Navigate to="/editor" replace />} />
+              </Route>
 
-          <Route path="/login" element={<Navigate to="/auth/login" replace />} />
-          <Route path="/signup" element={<Navigate to="/auth/signup" replace />} />
+              <Route element={<GuestOnlyRoute />}>
+                <Route element={<AuthLayout />}>
+                  <Route path="auth/login/*" element={<Login />} />
+                  <Route path="auth/signup/*" element={<Signup />} />
+                </Route>
+              </Route>
 
-          <Route element={<ProtectedRoute />}>
-            <Route element={<EditorLayout />}>
-              <Route path="/editor" element={<CreatePost />} />
-            </Route>
-            <Route path="/dashboard" element={<DashboardLayout />}>
-              <Route index element={<Navigate to="/dashboard/posts" replace />} />
-              <Route path="posts" element={<Dashboard />} />
-              <Route path="drafts" element={<DashboardDraftsPage />} />
-              <Route path="settings" element={<DashboardSettingsPage />} />
-            </Route>
-          </Route>
-
-          <Route path="/create-post" element={<Navigate to="/editor" replace />} />
-          <Route path="/404" element={<NotFoundPage />} />
-          <Route path="*" element={<Navigate to="/404" replace />} />
-        </Routes>
-      </RouteTransitionLoader>
-    </BrowserRouter>
+              <Route path="login" element={<Navigate to="/auth/login" replace />} />
+              <Route path="signup" element={<Navigate to="/auth/signup" replace />} />
+              <Route path="404" element={<NotFoundPage />} />
+              <Route path="*" element={<Navigate to="/404" replace />} />
+            </Routes>
+          </Suspense>
+        </RouteTransitionLoader>
+      </BrowserRouter>
     </ClerkProvider>
   </StrictMode>,
 )

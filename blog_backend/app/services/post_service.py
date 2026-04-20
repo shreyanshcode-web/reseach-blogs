@@ -3,6 +3,7 @@ Post service – business logic for blog posts.
 Integrates ML content moderation into create/update flows.
 """
 
+from datetime import datetime, timezone
 from typing import Sequence
 
 from fastapi import HTTPException, status
@@ -74,7 +75,15 @@ class PostService:
             moderation_status=result.status,
             moderation_score=result.confidence,
         )
-        return await post_repository.create(db, post)
+        post = await post_repository.create(db, post)
+        
+        # Ensure post object in memory has aware datetimes for immediate downstream usage (like events)
+        if post.created_at and post.created_at.tzinfo is None:
+            post.created_at = post.created_at.replace(tzinfo=timezone.utc)
+        if post.updated_at and post.updated_at.tzinfo is None:
+            post.updated_at = post.updated_at.replace(tzinfo=timezone.utc)
+            
+        return post
 
     async def get_post(
         self,
@@ -227,7 +236,15 @@ class PostService:
             if result.status == "flagged":
                 update_data["published"] = False
 
-        return await post_repository.update(db, post, **update_data)
+        post = await post_repository.update(db, post, **update_data)
+        
+        # Ensure post object in memory has aware datetimes
+        if post.created_at and post.created_at.tzinfo is None:
+            post.created_at = post.created_at.replace(tzinfo=timezone.utc)
+        if post.updated_at and post.updated_at.tzinfo is None:
+            post.updated_at = post.updated_at.replace(tzinfo=timezone.utc)
+            
+        return post
 
     async def delete_post(
         self, db: AsyncSession, post_id: int, current_user_id: int

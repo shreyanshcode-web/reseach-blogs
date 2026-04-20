@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
+from datetime import timezone
 
 from app.db.database import get_db
 from app.middleware.auth_middleware import get_current_user
@@ -12,6 +13,14 @@ from app.services.follow_service import follow_service
 from app.schemas.profile_schema import ProfileResponse, ProfileUpdate, PublicPortfolioResponse
 
 router = APIRouter(prefix="/api/profile", tags=["Profile"])
+
+
+def _normalize_datetime(value):
+    if value is None:
+        return None
+    if value.tzinfo is None:
+        return value.replace(tzinfo=timezone.utc)
+    return value.astimezone(timezone.utc)
 
 
 # ── Get Own Profile ──────────────────────────────────────────────
@@ -149,7 +158,7 @@ async def get_public_portfolio(
     # Recent published posts (last 5)
     recent = sorted(
         [p for p in user.posts if p.published and not p.is_suspended],
-        key=lambda p: p.created_at,
+        key=lambda p: _normalize_datetime(p.created_at),
         reverse=True,
     )[:5]
     recent_posts = [

@@ -10,7 +10,7 @@ function FeedCard({ post }) {
     <Link to={`/post/${post.id}`} className="app-shell__story-card">
       <div className="app-shell__story-head">
         <span>{post.category}</span>
-        <span>@{post.author?.username || "writer"}</span>
+        <span className="app-shell__author-name">@{post.author?.username || "writer"}</span>
       </div>
       <h2 className="app-shell__story-title">{post.title}</h2>
       <p className="app-shell__story-copy">{post.excerpt || "Open the post to read the full story."}</p>

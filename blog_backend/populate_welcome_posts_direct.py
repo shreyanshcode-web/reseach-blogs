@@ -138,7 +138,7 @@ def ensure_schema(cursor):
 
 
 def populate_welcome_posts():
-    db_path = "blog.db"
+    db_path = os.getenv("WELCOME_DB_PATH", "blog.db")
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
 
@@ -196,10 +196,18 @@ def populate_welcome_posts():
             cursor.execute(
                 """
                 INSERT INTO posts
-                (title, content, published, moderation_status, moderation_score, is_suspended, suspended_reason, author_id, created_at, updated_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                (
+                    title, content, published, moderation_status, moderation_score,
+                    view_count, unique_view_count, like_count, comment_count, share_count, bookmark_count,
+                    is_suspended, suspended_reason, author_id, created_at, updated_at
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
-                (post_data["title"], content_json, 1, "approved", 1.0, 0, None, admin_id, now, now),
+                (
+                    post_data["title"], content_json, 1, "approved", 1.0,
+                    0, 0, 0, 0, 0, 0,
+                    0, None, admin_id, now, now,
+                ),
             )
             print(f"Created welcome post '{post_data['title']}'.")
 

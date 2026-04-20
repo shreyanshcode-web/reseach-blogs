@@ -54,7 +54,7 @@ export default function DashboardDraftsPage() {
                     #{tag}
                   </span>
                 ))}
-                <Link to="/editor" className="app-shell__button">
+                <Link to={`/editor/${post.id}`} className="app-shell__button">
                   Open Editor
                 </Link>
                 <Link to={`/post/${post.id}`} className="app-shell__button">

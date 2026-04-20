@@ -1,5 +1,6 @@
 import { useRef } from "react";
 import { motion, useInView } from "framer-motion";
+import { Link } from "react-router-dom";
 import "../styles.css";
 
 function fmtDate(iso) {
@@ -36,37 +37,41 @@ export function LatestStories({ posts }) {
         initial={{ opacity: 0, y: 20 }} animate={inView ? { opacity: 1, y: 0 } : {}}
         transition={{ duration: 0.6 }}>
         <p className="sec-label">Latest Stories</p>
-        <a href="#" className="sec-more">View all &rarr;</a>
+        <Link to="/home" className="sec-more">View all &rarr;</Link>
       </motion.div>
 
       {hero && (
-        <motion.a href={"#" + hero.id} className="hero-card"
+        <motion.div
           initial={{ opacity: 0, y: 24 }} animate={inView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.7, delay: 0.1 }}>
-          <div className="hero-card-img" />
-          <div className="hero-card-body">
-            <p className="tag">@{hero.author?.username || "anon"} &mdash; {fmtDate(hero.created_at)}</p>
-            <h2 className="hero-card-title">{hero.title}</h2>
-            <p className="hero-card-excerpt">{cut(hero.content, 200)}</p>
-            <span className="read-more">Read the story &rarr;</span>
-          </div>
-        </motion.a>
+          <Link to={`/post/${hero.id}`} className="hero-card">
+            <div className="hero-card-img" />
+            <div className="hero-card-body">
+              <p className="tag">@{hero.author?.username || "anon"} &mdash; {fmtDate(hero.created_at)}</p>
+              <h2 className="hero-card-title">{hero.title}</h2>
+              <p className="hero-card-excerpt">{cut(hero.content, 200)}</p>
+              <span className="read-more">Read the story &rarr;</span>
+            </div>
+          </Link>
+        </motion.div>
       )}
 
       <div className="cards-row">
         {rest.length === 0 && !hero && <p className="empty">No stories yet.</p>}
         {rest.map((p, i) => (
-          <motion.a key={p.id} href={"#" + p.id} className="card"
+          <motion.div key={p.id}
             initial={{ opacity: 0, y: 20 }} animate={inView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.6, delay: 0.15 + i * 0.08 }}>
-            <div className="card-img" />
-            <div className="card-body">
-              <p className="tag">@{p.author?.username || "anon"} &mdash; {fmtDate(p.created_at)}</p>
-              <h3 className="card-title">{p.title}</h3>
-              <p className="card-excerpt">{cut(p.content, 100)}</p>
-              <span className="read-more">Read &rarr;</span>
-            </div>
-          </motion.a>
+            <Link to={`/post/${p.id}`} className="card">
+              <div className="card-img" />
+              <div className="card-body">
+                <p className="tag">@{p.author?.username || "anon"} &mdash; {fmtDate(p.created_at)}</p>
+                <h3 className="card-title">{p.title}</h3>
+                <p className="card-excerpt">{cut(p.content, 100)}</p>
+                <span className="read-more">Read &rarr;</span>
+              </div>
+            </Link>
+          </motion.div>
         ))}
       </div>
     </section>
@@ -109,23 +114,25 @@ export function MakingOf({ posts }) {
         initial={{ opacity: 0, y: 20 }} animate={inView ? { opacity: 1, y: 0 } : {}}
         transition={{ duration: 0.6 }}>
         <p className="sec-label">We speak in terms of stories</p>
-        <a href="#" className="sec-more">All stories &rarr;</a>
+        <Link to="/search" className="sec-more">All stories &rarr;</Link>
       </motion.div>
       <div className="making-grid">
         {posts.length === 0 && <p className="empty">Stories loading...</p>}
         {posts.slice(0, 6).map((p, i) => (
-          <motion.a key={p.id} href={"#" + p.id} className="making-card"
+          <motion.div key={p.id}
             initial={{ opacity: 0, y: 24 }} animate={inView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.6, delay: i * 0.07 }}>
-            <div className="making-img">
-              <span className="making-num">0{i + 1}</span>
-            </div>
-            <div className="making-body">
-              <h3>The making of the<br /><em>{p.title}</em> story</h3>
-              <p className="tag">@{p.author?.username || "anon"} &mdash; {fmtDate(p.created_at)}</p>
-              <span className="read-more">Take me there &rarr;</span>
-            </div>
-          </motion.a>
+            <Link to={`/post/${p.id}`} className="making-card">
+              <div className="making-img">
+                <span className="making-num">0{i + 1}</span>
+              </div>
+              <div className="making-body">
+                <h3>The making of the<br /><em>{p.title}</em> story</h3>
+                <p className="tag">@{p.author?.username || "anon"} &mdash; {fmtDate(p.created_at)}</p>
+                <span className="read-more">Take me there &rarr;</span>
+              </div>
+            </Link>
+          </motion.div>
         ))}
       </div>
     </section>
@@ -133,11 +140,11 @@ export function MakingOf({ posts }) {
 }
 
 const TOPICS_LIST = [
-  ["01", "Technology", "Engineering"],
-  ["02", "Design & Art", "Creative"],
-  ["03", "Science", "Research"],
-  ["04", "Culture", "Society"],
-  ["05", "Philosophy", "Thought"],
+  ["01", "Technology", "Engineering", "technology"],
+  ["02", "Design & Art", "Creative", "design"],
+  ["03", "Science", "Research", "science"],
+  ["04", "Culture", "Society", "culture"],
+  ["05", "Philosophy", "Thought", "opinion"],
 ];
 export function Topics() {
   const ref = useRef();
@@ -148,16 +155,16 @@ export function Topics() {
         initial={{ opacity: 0 }} animate={inView ? { opacity: 1 } : {}}
         transition={{ duration: 0.5 }}>Explore Topics</motion.p>
       <ul>
-        {TOPICS_LIST.map(([n, l, t], i) => (
+        {TOPICS_LIST.map(([n, l, t, query], i) => (
           <motion.li key={n}
             initial={{ opacity: 0, y: 14 }} animate={inView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.5, delay: i * 0.07 }}>
-            <a href="#" className="topic-row">
+            <Link to={`/search?q=${encodeURIComponent(query)}`} className="topic-row">
               <span className="topic-num">{n}</span>
               <span className="topic-name">{l}</span>
               <span className="topic-tag">{t}</span>
               <span className="topic-arrow">&rarr;</span>
-            </a>
+            </Link>
           </motion.li>
         ))}
       </ul>

@@ -57,11 +57,16 @@ class UserService:
 
     async def get_or_create_clerk_user(self, db: AsyncSession, claims: dict) -> User:
         email = (claims.get("email") or "").strip().lower()
+        clerk_id = claims.get("sub")
+
         if not email:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Clerk authentication returned an invalid email",
-            )
+            if not clerk_id:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Clerk authentication returned no email and no user ID",
+                )
+            # Generate a synthetic email for users without an email claim (common in default Clerk tokens)
+            email = f"clerk_{clerk_id}@clerk.user"
 
         user = await user_repository.get_by_email(db, email)
         if user:

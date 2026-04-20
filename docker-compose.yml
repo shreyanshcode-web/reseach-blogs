@@ -5,25 +5,6 @@ services:
     ports:
       - "6379:6379"
 
-  kafka:
-    image: bitnami/kafka:3.7
-    container_name: blog-kafka
-    environment:
-      KAFKA_CFG_NODE_ID: 1
-      KAFKA_CFG_PROCESS_ROLES: broker,controller
-      KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
-      KAFKA_CFG_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
-      KAFKA_CFG_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
-      KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT
-      KAFKA_CFG_CONTROLLER_LISTENER_NAMES: CONTROLLER
-      KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE: "true"
-      KAFKA_CFG_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-      KAFKA_CFG_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
-      KAFKA_CFG_TRANSACTION_STATE_LOG_MIN_ISR: 1
-      KAFKA_KRAFT_CLUSTER_ID: MkU3OEVBNTcwNTJENDM2Qk
-    ports:
-      - "9092:9092"
-
   auth-service:
     build:
       context: ./blog_backend
@@ -39,12 +20,11 @@ services:
       CLERK_ISSUER: ${CLERK_ISSUER:-}
       CLERK_JWKS_URL: ${CLERK_JWKS_URL:-}
     ports:
-      - "8001:8000"
+      - "8003:8000"
     volumes:
       - blog_backend_data:/app/data
     depends_on:
       - redis
-      - kafka
 
   content-service:
     build:
@@ -58,12 +38,13 @@ services:
       REDIS_URL: redis://redis:6379/0
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       KAFKA_TIMELINE_TOPIC: timeline-events
+      CLERK_ISSUER: ${CLERK_ISSUER:-}
+      CLERK_JWKS_URL: ${CLERK_JWKS_URL:-}
     command: ["uvicorn", "app.service_apps.content_app:app", "--host", "0.0.0.0", "--port", "8000"]
     volumes:
       - blog_backend_data:/app/data
     depends_on:
       - redis
-      - kafka
 
   analytics-service:
     build:
@@ -79,12 +60,13 @@ services:
       KAFKA_TIMELINE_TOPIC: timeline-events
       TIMELINE_EVENTS_ENABLED: "false"
       TIMELINE_CACHE_ENABLED: "false"
+      CLERK_ISSUER: ${CLERK_ISSUER:-}
+      CLERK_JWKS_URL: ${CLERK_JWKS_URL:-}
     command: ["uvicorn", "app.service_apps.analytics_app:app", "--host", "0.0.0.0", "--port", "8000"]
     volumes:
       - blog_backend_data:/app/data
     depends_on:
       - redis
-      - kafka
 
   timeline-service:
     build:
@@ -98,12 +80,13 @@ services:
       REDIS_URL: redis://redis:6379/0
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       KAFKA_TIMELINE_TOPIC: timeline-events
+      CLERK_ISSUER: ${CLERK_ISSUER:-}
+      CLERK_JWKS_URL: ${CLERK_JWKS_URL:-}
     command: ["uvicorn", "app.service_apps.timeline_app:app", "--host", "0.0.0.0", "--port", "8000"]
     volumes:
       - blog_backend_data:/app/data
     depends_on:
       - redis
-      - kafka
 
   admin-service:
     build:
@@ -119,12 +102,13 @@ services:
       KAFKA_TIMELINE_TOPIC: timeline-events
       TIMELINE_EVENTS_ENABLED: "false"
       TIMELINE_CACHE_ENABLED: "false"
+      CLERK_ISSUER: ${CLERK_ISSUER:-}
+      CLERK_JWKS_URL: ${CLERK_JWKS_URL:-}
     command: ["uvicorn", "app.service_apps.admin_app:app", "--host", "0.0.0.0", "--port", "8000"]
     volumes:
       - blog_backend_data:/app/data
     depends_on:
       - redis
-      - kafka
 
   api-gateway:
     image: nginx:1.27-alpine
@@ -132,27 +116,43 @@ services:
     depends_on:
       - auth-service
       - content-service
-      - analytics-service
       - timeline-service
       - admin-service
     volumes:
       - ./blog_backend/nginx.gateway.conf:/etc/nginx/nginx.conf:ro
     ports:
-      - "8001:80"
+      - "8002:80"
 
   frontend:
     build:
       context: ./blog-frontend
+      dockerfile: Dockerfile
       args:
-        VITE_API_URL: http://localhost:8001
-        VITE_CLERK_PUBLISHABLE_KEY: ${VITE_CLERK_PUBLISHABLE_KEY:-}
+        VITE_API_URL: http://localhost:8002
+        VITE_CLERK_PUBLISHABLE_KEY: ${VITE_CLERK_PUBLISHABLE_KEY}
     container_name: blog-frontend
     environment:
-      - VITE_CLERK_PUBLISHABLE_KEY=${VITE_CLERK_PUBLISHABLE_KEY:-}
+      - VITE_CLERK_PUBLISHABLE_KEY=${VITE_CLERK_PUBLISHABLE_KEY}
     depends_on:
       - api-gateway
     ports:
       - "5173:80"
+
+  seed-service:
+    build:
+      context: ./blog_backend
+    container_name: blog-seed-service
+    environment:
+      DATABASE_URL: sqlite+aiosqlite:///./data/blog.db
+      WELCOME_DB_PATH: /app/data/blog.db
+      WELCOME_ADMIN_PASSWORD: ${WELCOME_ADMIN_PASSWORD:-AdminWelcome123!}
+    command: ["sh", "-c", "sleep 5 && python populate_welcome_posts_direct.py"]
+    volumes:
+      - blog_backend_data:/app/data
+    depends_on:
+      - auth-service
+      - content-service
+      - timeline-service
 
 volumes:
   blog_backend_data:

@@ -2,12 +2,43 @@ export const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8001";
 
 const TOKEN_KEYS = ["access_token", "token", "authToken", "blog_token", "jwt"];
 
+function _decodeJwtPayload(token) {
+  const parts = token.split(".");
+  if (parts.length !== 3) {
+    return null;
+  }
+
+  try {
+    const normalized = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+    const padded = normalized.padEnd(normalized.length + ((4 - (normalized.length % 4)) % 4), "=");
+    return JSON.parse(window.atob(padded));
+  } catch {
+    return null;
+  }
+}
+
+function _isTokenExpired(token) {
+  const payload = _decodeJwtPayload(token);
+  if (!payload || typeof payload.exp !== "number") {
+    return false;
+  }
+
+  return payload.exp * 1000 <= Date.now();
+}
+
 export function getAuthToken() {
   for (const key of TOKEN_KEYS) {
     const value = window.localStorage.getItem(key);
-    if (value) {
-      return value;
+    if (!value) {
+      continue;
     }
+
+    if (_isTokenExpired(value)) {
+      clearAuthToken();
+      return "";
+    }
+
+    return value;
   }
 
   return "";

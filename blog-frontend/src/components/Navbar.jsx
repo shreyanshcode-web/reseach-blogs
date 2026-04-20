@@ -33,7 +33,10 @@ export default function Navbar({ alwaysSolid = false }) {
 
     (async () => {
       try {
-        const token = getAuthToken() || (await getToken());
+        let token = getAuthToken();
+        if (isSignedIn) {
+          token = (await getToken()) || token;
+        }
         if (token) {
           setAuthToken(token);
         }
@@ -60,7 +63,7 @@ export default function Navbar({ alwaysSolid = false }) {
       <div className={menuOpen ? "nav-links open" : "nav-links"}>
         <Link to={homeHref} onClick={() => setMenuOpen(false)}>Home</Link>
         <Link to="/search" onClick={() => setMenuOpen(false)}>Search</Link>
-        <Link to="/dashboard" onClick={() => setMenuOpen(false)}>Dashboard</Link>
+        <Link to="/dashboard/posts" onClick={() => setMenuOpen(false)}>Dashboard</Link>
         <Link to="/editor" onClick={() => setMenuOpen(false)}>Write</Link>
         <button type="button" className="theme-toggle" aria-label="Toggle theme" onClick={toggleTheme}>
           <span>{isDark ? "☀" : "☾"}</span>

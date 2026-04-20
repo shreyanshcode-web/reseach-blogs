@@ -7,6 +7,7 @@ __MACOSX/
 node_modules/
 dist/
 .env
+.env.*
 
 # Python
 __pycache__/

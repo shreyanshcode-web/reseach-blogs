@@ -2,6 +2,140 @@
   box-sizing: border-box;
 }
 
+/* --- Post Content Rendering --- */
+.ed-content-renderer {
+  font-family: inherit;
+  line-height: 1.8;
+  color: var(--color-foreground);
+  margin-top: 2rem;
+}
+
+.ed-block {
+  margin-bottom: 1.5rem;
+}
+
+.ed-paragraph p {
+  font-size: 1.125rem;
+  margin: 0;
+  color: rgba(0, 0, 0, 0.8);
+}
+
+.ed-heading h1 {
+  font-size: 2.5rem;
+  margin-top: 3rem;
+  margin-bottom: 1.5rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.ed-heading h2 {
+  font-size: 1.875rem;
+  margin-top: 2.5rem;
+  margin-bottom: 1.25rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.ed-heading h3 {
+  font-size: 1.5rem;
+  margin-top: 2rem;
+  margin-bottom: 1rem;
+  font-weight: 600;
+}
+
+.ed-blockquote {
+  border-left: 4px solid var(--color-primary);
+  padding-left: 1.5rem;
+  font-style: italic;
+  font-size: 1.25rem;
+  margin: 2.5rem 0;
+  color: rgba(0, 0, 0, 0.7);
+}
+
+.ed-list-item {
+  margin-left: 1.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.ed-bullet-list { list-style-type: disc; }
+.ed-numbered-list { list-style-type: decimal; }
+
+.ed-image-block {
+  margin: 3rem 0;
+}
+
+.ed-image-block img {
+  width: 100%;
+  height: auto;
+  border-radius: 8px;
+  display: block;
+}
+
+.ed-image-block figcaption,
+.ed-youtube-block figcaption {
+  font-size: 0.875rem;
+  color: #666;
+  text-align: center;
+  margin-top: 0.75rem;
+  font-style: italic;
+}
+
+.ed-video-container {
+  position: relative;
+  padding-bottom: 56.25%; /* 16:9 */
+  height: 0;
+  overflow: hidden;
+  border-radius: 8px;
+  background: #eee;
+  margin: 3rem 0;
+}
+
+.ed-video-container iframe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+.ed-code-inline {
+  background: rgba(0, 0, 0, 0.05);
+  padding: 0.2em 0.4em;
+  border-radius: 4px;
+  font-family: 'Courier New', Courier, monospace;
+}
+
+.ed-code-block {
+  background: #1a1a1a;
+  color: #f8f8f2;
+  padding: 1.5rem;
+  border-radius: 8px;
+  overflow-x: auto;
+  font-family: 'Courier New', Courier, monospace;
+  margin: 2rem 0;
+}
+
+.ed-code-block code {
+  color: inherit;
+}
+
+.ed-link {
+  color: var(--color-primary);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.ed-link:hover {
+  opacity: 0.8;
+}
+
+.ed-block-children {
+  margin-left: 2rem;
+  border-left: 1px solid rgba(0, 0, 0, 0.1);
+  padding-left: 1rem;
+}
+
 body {
   margin: 0;
   background: var(--white);
@@ -10,4 +144,4 @@ body {
 #root {
   width: 100vw;
   min-height: 100vh;
-} 
+}
