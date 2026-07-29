@@ -5,6 +5,7 @@ from functools import lru_cache
 class Settings(BaseSettings):
     APP_NAME: str = "Blog API"
     DATABASE_URL: str = "sqlite+aiosqlite:///./blog.db"
+    ML_DATABASE_URL: str = "sqlite+aiosqlite:///./ml_training.db"
     SECRET_KEY: str = "changeme"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     ALGORITHM: str = "HS256"

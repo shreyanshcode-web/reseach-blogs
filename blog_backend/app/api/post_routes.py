@@ -1,6 +1,6 @@
 from typing import List
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.database import get_db
@@ -35,22 +35,30 @@ async def create_post(
 
 @router.get("/", response_model=List[PostResponse])
 async def list_posts(
-    skip: int = 0,
-    limit: int = 100,
+    page: int = Query(1, ge=1, description="Page number, starting at 1"),
+    limit: int = Query(20, ge=1, le=100, description="Items per page"),
+    search: str = Query("", description="Search title, content, author, and tags"),
+    sort: str = Query("newest", pattern="^(newest|oldest|most_viewed|alphabetical)$"),
     db: AsyncSession = Depends(get_db),
     current_user: User | None = Depends(get_current_user_optional),
 ):
-    """List all posts with pagination."""
-    return await post_service.get_all_posts(
-        db, skip=skip, limit=limit, current_user=current_user
+    """List posts with pagination, search, and sorting."""
+    return await post_service.search_posts(
+        db,
+        query=search,
+        skip=(page - 1) * limit,
+        limit=limit,
+        current_user=current_user,
+        sort=sort,
     )
 
 
 @router.get("/search", response_model=List[PostResponse])
 async def search_posts(
-    q: str = "",
-    skip: int = 0,
-    limit: int = 100,
+    q: str = Query("", alias="q"),
+    page: int = Query(1, ge=1),
+    limit: int = Query(20, ge=1, le=100),
+    sort: str = Query("newest", pattern="^(newest|oldest|most_viewed|alphabetical)$"),
     db: AsyncSession = Depends(get_db),
     current_user: User | None = Depends(get_current_user_optional),
 ):
@@ -58,17 +66,19 @@ async def search_posts(
     return await post_service.search_posts(
         db,
         query=q,
-        skip=skip,
+        skip=(page - 1) * limit,
         limit=limit,
         current_user=current_user,
+        sort=sort,
     )
 
 
 @router.get("/author/{username}", response_model=List[PostResponse])
 async def list_posts_by_author(
     username: str,
-    skip: int = 0,
-    limit: int = 100,
+    page: int = Query(1, ge=1),
+    limit: int = Query(20, ge=1, le=100),
+    sort: str = Query("newest", pattern="^(newest|oldest|most_viewed|alphabetical)$"),
     db: AsyncSession = Depends(get_db),
     current_user: User | None = Depends(get_current_user_optional),
 ):
@@ -76,9 +86,10 @@ async def list_posts_by_author(
     return await post_service.get_posts_by_author_username(
         db,
         username=username,
-        skip=skip,
+        skip=(page - 1) * limit,
         limit=limit,
         current_user=current_user,
+        sort=sort,
     )
 
 

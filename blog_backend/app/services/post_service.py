@@ -4,6 +4,7 @@ Integrates ML content moderation into create/update flows.
 """
 
 from datetime import datetime, timezone
+import re
 from typing import Sequence
 
 from fastapi import HTTPException, status
@@ -36,6 +37,31 @@ def extract_text_from_blocks(content) -> str:
     return " ".join([text for text in extracted if text.strip()])
 
 
+def _slugify(value: str) -> str:
+    slug = re.sub(r"[^a-z0-9]+", "-", value.strip().lower())
+    slug = re.sub(r"-+", "-", slug).strip("-")
+    return slug[:200] or "post"
+
+
+async def _unique_slug(db: AsyncSession, title: str, exclude_post_id: int | None = None) -> str:
+    base = _slugify(title)
+    slug = base
+    suffix = 2
+    while await post_repository.slug_exists(db, slug, exclude_post_id=exclude_post_id):
+        slug = f"{base}-{suffix}"
+        suffix += 1
+    return slug
+
+
+def _clean_tags(tags: list[str] | None) -> list[str]:
+    cleaned = []
+    for tag in tags or []:
+        candidate = tag.strip().lower()
+        if candidate and candidate not in cleaned:
+            cleaned.append(candidate[:50])
+    return cleaned[:20]
+
+
 class PostService:
 
     async def create_post(
@@ -51,7 +77,7 @@ class PostService:
                 flagged_keywords=result.flagged_keywords
             )
             db.add(log_entry)
-            await db.commit()  # Force commit so the log persists despite the incoming exception
+            await db.flush()
 
         if result.status in ("rejected", "flagged"):
             author = await user_repository.get_by_id(db, author_id)
@@ -69,7 +95,9 @@ class PostService:
 
         post = Post(
             title=data.title,
+            slug=await _unique_slug(db, data.title),
             content=data.content,
+            tags=_clean_tags(data.tags),
             published=data.published if result.status == "approved" else False,
             author_id=author_id,
             moderation_status=result.status,
@@ -121,12 +149,14 @@ class PostService:
         skip: int = 0,
         limit: int = 100,
         current_user: User | None = None,
+        sort: str = "newest",
     ) -> Sequence[Post]:
         return await post_repository.get_all(
             db,
             skip=skip,
             limit=limit,
             current_user_id=current_user.id if current_user else None,
+            sort=sort,
         )
 
     async def get_posts_by_author(
@@ -136,6 +166,7 @@ class PostService:
         skip: int = 0,
         limit: int = 100,
         current_user: User | None = None,
+        sort: str = "newest",
     ) -> Sequence[Post]:
         return await post_repository.get_by_author(
             db,
@@ -143,6 +174,7 @@ class PostService:
             skip=skip,
             limit=limit,
             current_user_id=current_user.id if current_user else None,
+            sort=sort,
         )
 
     async def get_posts_by_author_username(
@@ -152,6 +184,7 @@ class PostService:
         skip: int = 0,
         limit: int = 100,
         current_user: User | None = None,
+        sort: str = "newest",
     ) -> Sequence[Post]:
         author = await user_repository.get_by_username(db, username)
         if not author:
@@ -164,6 +197,7 @@ class PostService:
             skip=skip,
             limit=limit,
             current_user=current_user,
+            sort=sort,
         )
 
     async def search_posts(
@@ -173,6 +207,7 @@ class PostService:
         skip: int = 0,
         limit: int = 100,
         current_user: User | None = None,
+        sort: str = "newest",
     ) -> Sequence[Post]:
         if not query.strip():
             return await self.get_all_posts(
@@ -180,6 +215,7 @@ class PostService:
                 skip=skip,
                 limit=limit,
                 current_user=current_user,
+                sort=sort,
             )
         return await post_repository.search(
             db,
@@ -187,6 +223,7 @@ class PostService:
             skip=skip,
             limit=limit,
             current_user_id=current_user.id if current_user else None,
+            sort=sort,
         )
 
     async def update_post(
@@ -215,7 +252,7 @@ class PostService:
                     flagged_keywords=result.flagged_keywords
                 )
                 db.add(log_entry_update)
-                await db.commit()
+                await db.flush()
 
             if result.status in ("rejected", "flagged"):
                 author = await user_repository.get_by_id(db, current_user_id)
@@ -235,6 +272,11 @@ class PostService:
             update_data["moderation_score"] = result.confidence
             if result.status == "flagged":
                 update_data["published"] = False
+
+        if "title" in update_data:
+            update_data["slug"] = await _unique_slug(db, update_data["title"], exclude_post_id=post.id)
+        if "tags" in update_data:
+            update_data["tags"] = _clean_tags(update_data["tags"])
 
         post = await post_repository.update(db, post, **update_data)
         

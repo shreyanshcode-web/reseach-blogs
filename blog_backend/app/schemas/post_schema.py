@@ -9,12 +9,14 @@ from pydantic import BaseModel, Field
 class PostCreate(BaseModel):
     title: str = Field(..., min_length=1, max_length=200)
     content: Any = Field(..., description="Can be text or a Notion-style JSON block array")
+    tags: list[str] = Field(default_factory=list, max_length=20)
     published: bool = False
 
 
 class PostUpdate(BaseModel):
     title: Optional[str] = Field(None, min_length=1, max_length=200)
     content: Optional[Any] = Field(None, description="Can be text or a Notion-style JSON block array")
+    tags: Optional[list[str]] = Field(None, max_length=20)
     published: Optional[bool] = None
 
 
@@ -30,7 +32,9 @@ class AuthorBrief(BaseModel):
 class PostResponse(BaseModel):
     id: int
     title: str
+    slug: str
     content: Any
+    tags: list[str] | None = None
     published: bool
     moderation_status: str
     moderation_score: float | None = None

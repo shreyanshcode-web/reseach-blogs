@@ -1,6 +1,6 @@
 from typing import List
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.database import get_db
@@ -36,12 +36,12 @@ async def get_current_user_profile(
 
 @router.get("/", response_model=List[UserResponse])
 async def list_users(
-    skip: int = 0,
-    limit: int = 100,
+    page: int = Query(1, ge=1),
+    limit: int = Query(20, ge=1, le=100),
     db: AsyncSession = Depends(get_db),
 ):
     """List all users with pagination."""
-    users = await user_service.get_all_users(db, skip=skip, limit=limit)
+    users = await user_service.get_all_users(db, skip=(page - 1) * limit, limit=limit)
     return [await user_service.serialize_user(db, user) for user in users]
 
 
@@ -60,6 +60,8 @@ async def update_user(
     current_user: User = Depends(get_current_user),
 ):
     """Update a user (authenticated)."""
+    if current_user.id != user_id and not current_user.is_admin:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to update this user")
     user = await user_service.update_user(db, user_id, data)
     return await user_service.serialize_user(db, user)
 
@@ -71,4 +73,6 @@ async def delete_user(
     current_user: User = Depends(get_current_user),
 ):
     """Delete a user (authenticated)."""
+    if current_user.id != user_id and not current_user.is_admin:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to delete this user")
     await user_service.delete_user(db, user_id)

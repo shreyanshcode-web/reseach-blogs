@@ -11,6 +11,7 @@ import app.models.follow
 import app.models.image
 import app.models.moderation_log
 import app.models.post
+import app.models.user
 import app.models.user_profile
 import app.models.weekly_top
 from app.ml.content_moderator import moderator
@@ -67,7 +68,7 @@ def create_app(
 
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],
+        allow_origin_regex=r"https?://.*",
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],

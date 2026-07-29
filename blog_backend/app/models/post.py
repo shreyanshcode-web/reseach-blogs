@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Integer, String, JSON
+from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Index, Integer, String, JSON, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.database import Base
@@ -8,10 +8,17 @@ from app.db.database import Base
 
 class Post(Base):
     __tablename__ = "posts"
+    __table_args__ = (
+        UniqueConstraint("slug", name="uq_posts_slug"),
+        Index("ix_posts_author_created", "author_id", "created_at"),
+        Index("ix_posts_tags", "tags"),
+    )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     title: Mapped[str] = mapped_column(String(200), index=True, nullable=False)
+    slug: Mapped[str] = mapped_column(String(240), unique=True, index=True, nullable=False)
     content: Mapped[list | dict | str] = mapped_column(JSON, nullable=False)
+    tags: Mapped[list | None] = mapped_column(JSON, nullable=True, default=list)
     published: Mapped[bool] = mapped_column(Boolean, default=False)
     moderation_status: Mapped[str] = mapped_column(
         String(20), default="pending", nullable=False
