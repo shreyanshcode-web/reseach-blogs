@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import { Suspense, StrictMode, lazy } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
@@ -48,16 +49,13 @@ createRoot(document.getElementById('root')).render(
         <RouteTransitionLoader>
           <Suspense fallback={<RouteFallback />}>
             <Routes>
+              <Route index element={<LandingPage />} />
+
               <Route element={<AppShellLayout />}>
-                <Route index element={<HomeFeedPage />} />
                 <Route path="home" element={<HomeFeedPage />} />
                 <Route path="search" element={<SearchPage />} />
                 <Route path="profile/:username" element={<ProfilePage />} />
                 <Route path="post/:id" element={<PostViewPage />} />
-
-                <Route path="creative" element={<CreativeLanding />} />
-                <Route path="classic" element={<LandingPage />} />
-                <Route path="hero" element={<HeroPage />} />
 
                 <Route element={<ProtectedRoute />}>
                   <Route element={<EditorLayout />}>
@@ -74,6 +72,10 @@ createRoot(document.getElementById('root')).render(
 
                 <Route path="create-post" element={<Navigate to="/editor" replace />} />
               </Route>
+
+              <Route path="creative" element={<CreativeLanding />} />
+              <Route path="classic" element={<LandingPage />} />
+              <Route path="hero" element={<HeroPage />} />
 
               <Route element={<GuestOnlyRoute />}>
                 <Route element={<AuthLayout />}>

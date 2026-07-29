@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import Lenis from "lenis";
 import Navbar from "../components/Navbar";
 import Hero from "../components/Hero";
 import { Ticker, LatestStories, Manifesto, MakingOf, Topics } from "../components/LandingSections";
@@ -13,6 +14,20 @@ export default function LandingPage() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    const lenis = new Lenis({
+      duration: 1.08,
+      smoothWheel: true,
+      wheelMultiplier: 0.9,
+    });
+    let frameId;
+
+    function raf(time) {
+      lenis.raf(time);
+      frameId = requestAnimationFrame(raf);
+    }
+
+    frameId = requestAnimationFrame(raf);
+
     apiRequest("/api/posts/?limit=9")
       .then((data) =>
         setPosts(
@@ -24,6 +39,11 @@ export default function LandingPage() {
       )
       .catch(() => { })
       .finally(() => setIsLoading(false));
+
+    return () => {
+      cancelAnimationFrame(frameId);
+      lenis.destroy();
+    };
   }, []);
 
   return (

@@ -36,7 +36,7 @@ export function LatestStories({ posts }) {
       <motion.div className="sec-head"
         initial={{ opacity: 0, y: 20 }} animate={inView ? { opacity: 1, y: 0 } : {}}
         transition={{ duration: 0.6 }}>
-        <p className="sec-label">Latest Stories</p>
+        <p className="sec-label">Start with a blog template</p>
         <Link to="/home" className="sec-more">View all &rarr;</Link>
       </motion.div>
 
@@ -109,11 +109,11 @@ export function MakingOf({ posts }) {
   const ref = useRef();
   const inView = useInView(ref, { once: true, margin: "-60px" });
   return (
-    <section className="section making" ref={ref}>
+    <section className="section making" id="features" ref={ref}>
       <motion.div className="sec-head"
         initial={{ opacity: 0, y: 20 }} animate={inView ? { opacity: 1, y: 0 } : {}}
         transition={{ duration: 0.6 }}>
-        <p className="sec-label">We speak in terms of stories</p>
+        <p className="sec-label">Features to reach the right audience</p>
         <Link to="/search" className="sec-more">All stories &rarr;</Link>
       </motion.div>
       <div className="making-grid">
@@ -150,15 +150,19 @@ export function Topics() {
   const ref = useRef();
   const inView = useInView(ref, { once: true, margin: "-60px" });
   return (
-    <section className="section topics" id="topics" ref={ref}>
-      <motion.p className="sec-label"
-        initial={{ opacity: 0 }} animate={inView ? { opacity: 1 } : {}}
-        transition={{ duration: 0.5 }}>Explore Topics</motion.p>
-      <ul>
+    <section className="section topics topics--premium" id="topics" ref={ref}>
+      <motion.div className="topics-head"
+        initial={{ opacity: 0, y: 20 }} animate={inView ? { opacity: 1, y: 0 } : {}}
+        transition={{ duration: 0.6 }}>
+        <p className="sec-label">Featured Topics</p>
+        <h2>Choose a room in the editorial studio.</h2>
+      </motion.div>
+      <ul className="topic-cloud">
         {TOPICS_LIST.map(([n, l, t, query], i) => (
           <motion.li key={n}
-            initial={{ opacity: 0, y: 14 }} animate={inView ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.5, delay: i * 0.07 }}>
+            style={{ "--i": i }}
+            initial={{ opacity: 0, y: 30, rotateX: 18 }} animate={inView ? { opacity: 1, y: 0, rotateX: 0 } : {}}
+            transition={{ duration: 0.7, delay: i * 0.08, ease: [0.16, 1, 0.3, 1] }}>
             <Link to={`/search?q=${encodeURIComponent(query)}`} className="topic-row">
               <span className="topic-num">{n}</span>
               <span className="topic-name">{l}</span>
