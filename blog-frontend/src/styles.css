@@ -714,11 +714,25 @@ body {
 
 /* ── MANIFESTO ── */
 .manifesto {
-  background: var(--black);
+  position: relative;
+  overflow: hidden;
+  background: #030405;
   padding: 120px 8%;
 }
 
+.manifesto::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(rgba(255,255,255,0.12) 1px, transparent 1px);
+  background-size: 34px 34px;
+  opacity: 0.18;
+  pointer-events: none;
+}
+
 .mline {
+  position: relative;
+  z-index: 1;
   font-family: "Playfair Display", serif;
   font-size: clamp(24px, 3.5vw, 52px);
   font-weight: 400; font-style: italic;
