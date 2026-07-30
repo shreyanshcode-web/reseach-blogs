@@ -814,20 +814,35 @@ body {
 
 /* ── FOOTER ── */
 .footer {
-  background: var(--black); color: var(--white);
+  position: relative;
+  overflow: hidden;
+  background: #030405;
+  color: #fafafa;
   padding: 80px 8% 40px;
 }
 
+.footer::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(rgba(255,255,255,0.12) 1px, transparent 1px);
+  background-size: 34px 34px;
+  opacity: 0.18;
+  pointer-events: none;
+}
+
 .footer-inner {
+  position: relative;
+  z-index: 1;
   display: grid;
   grid-template-columns: 1fr 2fr;
   gap: 80px;
   padding-bottom: 60px;
-  border-bottom: 1px solid var(--footer-border);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   margin-bottom: 40px;
 }
 
-.footer-brand .logo { color: var(--white); }
+.footer-brand .logo { color: #ffffff; }
 
 .footer-desc {
   font-size: 13px; color: var(--footer-muted);
@@ -853,9 +868,11 @@ body {
   transition: color 0.2s;
 }
 
-.footer-cols a:hover { color: var(--white); }
+.footer-cols a:hover { color: #ffffff; }
 
 .footer-bottom {
+  position: relative;
+  z-index: 1;
   display: flex; justify-content: space-between; align-items: center;
   font-size: 11px; color: var(--footer-meta);
   letter-spacing: 0.5px;
