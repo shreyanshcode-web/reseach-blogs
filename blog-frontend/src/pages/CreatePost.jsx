@@ -12,7 +12,7 @@ import {
 
 import "../styles.css";
 import "../create-post.css";
-import { API_BASE, getAuthToken, setAuthToken } from "../lib/api";
+import { API_BASE, clearAuthToken, getAuthToken, setAuthToken } from "../lib/api";
 import { useTheme } from "../lib/theme";
 import {
   blogEditorSchema,
