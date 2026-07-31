@@ -3,17 +3,31 @@
 
 .editor-page {
   min-height: 100vh;
-  background:
-    radial-gradient(circle at top left, rgba(232, 0, 29, 0.08), transparent 22%),
-    linear-gradient(180deg, #fafaf7 0%, #f4f1ea 100%);
-  color: #141414;
+  background-color: #fafafa;
+  background-image:
+    radial-gradient(circle at 18% 18%, rgba(232, 0, 29, 0.15), transparent 22%),
+    radial-gradient(circle at 82% 14%, rgba(0, 0, 0, 0.04), transparent 20%),
+    radial-gradient(circle at 50% 50%, rgba(182, 115, 248, 0.1), transparent 45%),
+    radial-gradient(circle at center, transparent 10%, #fafafa 80%),
+    radial-gradient(rgba(0, 0, 0, 0.08) 1.5px, transparent 1.5px);
+  background-size: 100% 100%, 100% 100%, 100% 100%, 100% 100%, 24px 24px;
+  background-position: center, center, center, center, center;
+  background-attachment: fixed;
+  color: #0a0a0a;
 }
 
 .editor-page.editor-page--dark {
-  background:
-    radial-gradient(circle at top left, rgba(248, 113, 113, 0.14), transparent 24%),
-    linear-gradient(180deg, #0f1218 0%, #111827 100%);
-  color: #f5f7fb;
+  background-color: #0c0f14;
+  background-image:
+    radial-gradient(circle at 18% 18%, rgba(232, 0, 29, 0.15), transparent 22%),
+    radial-gradient(circle at 82% 14%, rgba(255, 255, 255, 0.06), transparent 20%),
+    radial-gradient(circle at 50% 50%, rgba(182, 115, 248, 0.1), transparent 45%),
+    radial-gradient(circle at center, transparent 10%, #0c0f14 80%),
+    radial-gradient(rgba(255, 255, 255, 0.12) 1.5px, transparent 1.5px);
+  background-size: 100% 100%, 100% 100%, 100% 100%, 100% 100%, 24px 24px;
+  background-position: center, center, center, center, center;
+  background-attachment: fixed;
+  color: #f5f1e8;
 }
 
 .editor-shell {
