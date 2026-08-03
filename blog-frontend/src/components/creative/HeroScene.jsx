@@ -91,7 +91,7 @@ const fragmentShader = `
     vec3 accent = vec3(0.35, 0.06, 0.08) * pow(headGlow, 3.0) * step(0.9, hash(cell.x * 3.13));
 
     vec3 color = base + glow + accent + haze * vec3(0.02, 0.12, 0.04);
-    color *= vignette * scan;55
+    color *= vignette * scan;
 
     gl_FragColor = vec4(color, clamp(brightness * 0.9 + haze, 0.0, 1.0));
   }

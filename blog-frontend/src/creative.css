@@ -3,37 +3,37 @@
    All classes prefixed with c- to avoid conflicts
    ═══════════════════════════════════════════════════════════════ */
 
-@import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital,wght@0,400;1,400&family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Inter:wght@300;400;500;600&display=swap');
 
 :root {
   --c-bg: #050505;
-  --c-bg-alt: #0a0a0f;
-  --c-text: #f0f0f0;
-  --c-text-dim: rgba(240, 240, 240, 0.45);
-  --c-accent: #e8001d;
-  --c-accent-glow: rgba(232, 0, 29, 0.3);
-  --c-glass: rgba(255, 255, 255, 0.04);
+  --c-bg-alt: #0B0B0B;
+  --c-text: #F5F5F5;
+  --c-text-dim: #9CA3AF;
+  --c-accent: #FF4055;
+  --c-accent-glow: rgba(255, 64, 85, 0.25);
+  --c-glass: #111111;
   --c-glass-border: rgba(255, 255, 255, 0.08);
-  --c-glass-hover: rgba(255, 255, 255, 0.08);
-  --c-dot-color: rgba(255, 255, 255, 0.12);
-  --c-font-display: 'Sora', sans-serif;
+  --c-glass-hover: rgba(255, 255, 255, 0.12);
+  --c-dot-color: rgba(255, 255, 255, 0.05);
+  --c-font-display: 'Instrument Serif', 'Cormorant Garamond', 'Playfair Display', serif;
   --c-font-body: 'Inter', sans-serif;
-  --c-font-mono: 'Sora', sans-serif;
-  --c-radius: 16px;
+  --c-font-mono: 'Inter', sans-serif;
+  --c-radius: 20px;
   --c-transition: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 [data-theme='light'] {
-  --c-bg: #f8f9fa;
-  --c-bg-alt: #ffffff;
-  --c-text: #1a1a1a;
-  --c-text-dim: rgba(26, 26, 26, 0.6);
-  --c-accent: #e8001d;
-  --c-accent-glow: rgba(232, 0, 29, 0.1);
-  --c-glass: rgba(0, 0, 0, 0.04);
-  --c-glass-border: rgba(0, 0, 0, 0.08);
-  --c-glass-hover: rgba(0, 0, 0, 0.06);
-  --c-dot-color: rgba(0, 0, 0, 0.08);
+  --c-bg: #050505;
+  --c-bg-alt: #0B0B0B;
+  --c-text: #F5F5F5;
+  --c-text-dim: #9CA3AF;
+  --c-accent: #FF4055;
+  --c-accent-glow: rgba(255, 64, 85, 0.25);
+  --c-glass: #111111;
+  --c-glass-border: rgba(255, 255, 255, 0.08);
+  --c-glass-hover: rgba(255, 255, 255, 0.12);
+  --c-dot-color: rgba(255, 255, 255, 0.05);
 }
 
 .c-theme-toggle {
@@ -60,14 +60,47 @@
 
 /* ── GLOBAL CREATIVE PAGE ── */
 .c-page {
-  background: var(--c-bg);
-  color: var(--c-text);
-  font-family: var(--c-font-body);
+  position: relative;
+  min-height: 100vh;
+  width: 100%;
+  background-color: var(--c-bg) !important;
+  background-image: 
+    radial-gradient(circle at 15% 20%, rgba(255, 64, 85, 0.1) 0%, transparent 40%),
+    radial-gradient(circle at 85% 80%, rgba(182, 115, 248, 0.05) 0%, transparent 40%),
+    radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.005) 0%, transparent 60%),
+    radial-gradient(var(--c-dot-color) 1.2px, transparent 1.2px) !important;
+  background-size: 100% 100%, 100% 100%, 100% 100%, 28px 28px !important;
+  background-position: center !important;
+  background-attachment: fixed !important;
+  color: var(--c-text) !important;
+  font-family: var(--c-font-body) !important;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overflow-x: hidden;
-  min-height: 100vh;
   cursor: none;
+}
+
+/* SVG fractal noise overlay */
+.c-page::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0.02;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E") !important;
+  z-index: 10;
+}
+
+/* Vignette overlay */
+.c-page::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(circle, transparent 30%, rgba(5, 5, 5, 0.7) 100%) !important;
+  pointer-events: none;
+  z-index: 1;
 }
 
 .c-page *, .c-page *::before, .c-page *::after {
@@ -618,24 +651,28 @@
 .c-cards-row {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 0;
-  border-top: 1px solid var(--c-glass-border);
+  gap: 24px;
 }
 
 .c-card {
   padding: 40px 32px;
-  border-right: 1px solid var(--c-glass-border);
+  background: var(--c-glass) !important;
+  border: 1px solid var(--c-glass-border) !important;
+  border-radius: var(--c-radius) !important;
   text-decoration: none;
   color: inherit;
-  transition: background 0.4s var(--c-transition), box-shadow 0.4s;
+  transition: transform 0.4s var(--c-transition), 
+              background-color 0.4s ease, 
+              border-color 0.4s ease, 
+              box-shadow 0.4s ease;
   position: relative;
 }
 
-.c-card:last-child { border-right: none; }
-
 .c-card:hover {
-  background: var(--c-glass-hover);
-  box-shadow: inset 0 0 80px rgba(232, 0, 29, 0.03);
+  transform: translateY(-5px);
+  background: rgba(255, 255, 255, 0.06) !important;
+  border-color: rgba(255, 255, 255, 0.16) !important;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5), 0 0 20px rgba(255, 64, 85, 0.05) !important;
 }
 
 .c-card__img {
@@ -730,6 +767,7 @@
 .c-making-card {
   text-decoration: none;
   color: inherit;
+  background: var(--c-glass);
   border: 1px solid var(--c-glass-border);
   border-radius: var(--c-radius);
   overflow: hidden;
@@ -739,9 +777,9 @@
 
 .c-making-card:hover {
   background: var(--c-glass-hover);
-  border-color: rgba(232, 0, 29, 0.2);
-  transform: translateY(-4px);
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3), 0 0 40px var(--c-accent-glow);
+  border-color: rgba(255, 64, 85, 0.2);
+  transform: translateY(-5px);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), 0 0 40px var(--c-accent-glow);
 }
 
 .c-making-card__img {

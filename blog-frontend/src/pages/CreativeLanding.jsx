@@ -2,8 +2,8 @@ import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { useInView } from 'react-intersection-observer';
 import SmoothScroll from '../components/creative/SmoothScroll';
 import CustomCursor from '../components/creative/CustomCursor';
+import Navbar from '../components/Navbar';
 import CreativeLoadingScreen from '../components/creative/CreativeLoadingScreen';
-import CreativeNavbar from '../components/creative/CreativeNavbar';
 import { apiRequest } from '../lib/api';
 
 // Lazy load heavy components
@@ -38,12 +38,12 @@ export default function CreativeLanding() {
   }, [isLoading]);
 
   return (
-    <div className="c-page">
+    <div className="c-page site">
       <SmoothScroll>
         {isLoading && <CreativeLoadingScreen onComplete={() => setIsLoading(false)} />}
         <div style={{ opacity: isLoading ? 0 : 1, transition: 'opacity 0.8s ease' }}>
           <CustomCursor />
-          <CreativeNavbar />
+          <Navbar />
           
           <SectionWrapper threshold={0.05}>
             <CreativeHero />
