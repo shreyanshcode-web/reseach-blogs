@@ -729,14 +729,17 @@ export default function CreatePost() {
                     />
                   ) : (
                     <div className="editor-upload-empty">
-                      Add a cover image so the post feels complete in feeds, previews, and profile listings.
+                      <span>Add a cover image so the post feels complete in feeds, previews, and profile listings.</span>
+                      <small style={{ display: 'block', marginTop: '8px', opacity: 0.6 }}>Upload a wide image for the cleanest crop.</small>
                     </div>
                   )}
 
                   <div className="editor-cover-overlay">
-                    <div className="editor-cover-hint">
-                      {cover.image ? "Drag the image to reposition it inside the frame." : "Upload a wide image for the cleanest crop."}
-                    </div>
+                    {cover.image ? (
+                      <div className="editor-cover-hint">
+                        Drag the image to reposition it inside the frame.
+                      </div>
+                    ) : null}
                     <div className="editor-cover-actions">
                       <button type="button" className="editor-button--ghost" onClick={() => coverInputRef.current?.click()}>
                         {cover.image ? "Replace Cover" : "Upload Cover"}
@@ -863,6 +866,7 @@ export default function CreatePost() {
                 <div className="editor-workspace">
                   <BlockNoteView
                     editor={editor}
+                    theme="dark"
                     slashMenu={false}
                     onChange={() => syncEditorState(editor)}
                   >
