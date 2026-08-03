@@ -44,7 +44,42 @@ function RouteFallback() {
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <ClerkProvider publishableKey={clerkPublishableKey} navigate={clerkNavigate}>
+    <ClerkProvider
+      publishableKey={clerkPublishableKey}
+      navigate={clerkNavigate}
+      appearance={{
+        baseTheme: undefined,
+        variables: {
+          colorBackground: "#111111",
+          colorPrimary: "#ffffff",
+          colorText: "#F5F5F5",
+          colorTextSecondary: "#A5A5A5",
+          colorInputBackground: "#18181B",
+          colorInputText: "#ffffff",
+          borderRadius: "18px",
+        },
+        elements: {
+          card: "bg-transparent shadow-none border-none p-0 m-0 w-full",
+          rootBox: "w-full",
+          formButtonPrimary:
+            "w-full !bg-white !text-black hover:!bg-zinc-200 rounded-xl transition-all font-semibold py-3",
+          socialButtonsBlockButton:
+            "!bg-zinc-900 border border-white/10 !text-white hover:!bg-zinc-800 rounded-xl transition-all",
+          formFieldInput:
+            "!bg-zinc-900 border border-white/10 !text-white placeholder:text-zinc-500 rounded-xl transition-all focus:border-white/20",
+          headerTitle: "hidden",
+          headerSubtitle: "hidden",
+          footer: "hidden",
+          dividerText: "!text-zinc-500",
+          dividerLine: "bg-white/10",
+          formFieldLabel: "!text-zinc-400 font-medium",
+          formFieldInputShowPasswordButton: "!text-zinc-400 hover:!text-white",
+          identityPreviewText: "!text-white",
+          identityPreviewEditButton: "!text-white hover:underline",
+          socialButtonsBlockButtonText: "!text-white", // Target the button text directly to fix dark text on dark background
+        },
+      }}
+    >
       <BrowserRouter>
         <RouteTransitionLoader>
           <Suspense fallback={<RouteFallback />}>
