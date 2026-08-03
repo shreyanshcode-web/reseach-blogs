@@ -1,3 +1,9 @@
+html:has(.app-shell),
+body:has(.app-shell) {
+  background-color: #050505 !important;
+  overflow-x: hidden;
+}
+
 .app-shell {
   min-height: 100vh;
   background-color: var(--c-bg);
@@ -70,7 +76,8 @@
 }
 
 .app-shell__navlink.is-active {
-  box-shadow: inset 0 0 0 1px rgba(232, 0, 29, 0.18);
+  box-shadow: inset 0 0 0 1px rgba(255, 64, 85, 0.25);
+  border-color: rgba(255, 64, 85, 0.3);
 }
 
 .app-shell__actions {
@@ -100,8 +107,8 @@
 }
 
 .app-shell__button:hover {
-  border-color: rgba(232, 0, 29, 0.28);
-  background: rgba(232, 0, 29, 0.12);
+  border-color: var(--c-accent);
+  background: rgba(255, 64, 85, 0.1);
 }
 
 .app-shell__button--primary {
@@ -137,7 +144,7 @@
   position: relative;
   overflow: hidden;
   border: 1px solid var(--c-glass-border);
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02));
+  background: var(--c-glass);
   box-shadow: 0 20px 80px rgba(0, 0, 0, 0.28);
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
@@ -150,21 +157,23 @@
 }
 
 .app-shell__hero-card {
-  aspect-ratio: 16 / 9;
-  min-height: min(56vw, 620px);
+  min-height: 380px;
   padding: clamp(24px, 3vw, 42px);
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
   background:
-    radial-gradient(circle at top left, rgba(232, 0, 29, 0.22), transparent 24%),
-    linear-gradient(140deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.02) 54%, rgba(232, 0, 29, 0.06) 100%);
+    radial-gradient(circle at top left, rgba(255, 64, 85, 0.18), transparent 30%),
+    linear-gradient(140deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.01) 50%, rgba(255, 64, 85, 0.04) 100%),
+    var(--c-glass);
 }
 
 .app-shell__side-card {
-  aspect-ratio: 16 / 9;
-  min-height: min(38vw, 360px);
+  min-height: 380px;
   padding: 24px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.01)),
+    var(--c-glass);
 }
 
 .app-shell__glow {
@@ -263,8 +272,9 @@
 }
 
 .app-shell__stage-card--ratio {
-  aspect-ratio: 16 / 9;
-  min-height: min(50vw, 560px);
+  /* Aspect ratio removed to resolve horizontal grid overflow/overlap */
+  aspect-ratio: auto;
+  min-height: 0;
 }
 
 .app-shell__section-title {
@@ -290,6 +300,13 @@
   border-radius: 24px;
   padding: 18px;
   min-height: 148px;
+  transition: transform 0.3s var(--c-transition), border-color 0.3s var(--c-transition), background 0.3s var(--c-transition);
+}
+
+.app-shell__metric-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(255, 64, 85, 0.2);
+  background: var(--c-glass-hover);
 }
 
 .app-shell__metric-label {
@@ -305,15 +322,17 @@
 
 .app-shell__metric-value {
   font-family: var(--c-font-display);
-  font-size: clamp(28px, 3vw, 44px);
-  line-height: 1;
+  font-size: clamp(20px, 2.2vw, 32px);
+  line-height: 1.1;
   margin-bottom: 10px;
+  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
 .app-shell__metric-note {
   color: rgba(240, 240, 240, 0.68);
-  line-height: 1.5;
-  font-size: 14px;
+  line-height: 1.4;
+  font-size: 13px;
 }
 
 .app-shell__story-list {
@@ -330,9 +349,10 @@
 }
 
 .app-shell__story-card:hover {
-  transform: translateY(-4px);
-  border-color: rgba(232, 0, 29, 0.22);
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.03));
+  transform: translateY(-5px);
+  border-color: var(--c-accent);
+  background: var(--c-glass-hover);
+  box-shadow: 0 10px 30px rgba(255, 64, 85, 0.08);
 }
 
 .app-shell__story-head {
@@ -506,6 +526,10 @@
   .app-shell__body-grid {
     grid-template-columns: 1.5fr 1fr;
   }
+
+  .app-shell__metric-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
 @media (max-width: 1100px) {
@@ -520,43 +544,116 @@
     display: none; /* Hide trending side strip on tablet to focus on hero */
   }
 
-  .app-shell__metric-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  .app-shell__stage-card--ratio,
   .app-shell__hero-card {
-    aspect-ratio: auto;
     min-height: 0;
   }
 }
 
-@media (max-width: 780px) {
+/* Desktop default for menu drawer and burger button */
+.app-shell__menu-wrapper {
+  display: contents;
+}
+.app-shell__topbar-inner .burger {
+  display: none;
+}
+
+@media (max-width: 1150px) {
   .app-shell__topbar {
     padding: 12px 16px;
   }
 
   .app-shell__topbar-inner {
-    grid-template-columns: 1fr;
-    gap: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+  }
+
+  .app-shell__topbar-inner .burger {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    width: 24px;
+    height: 18px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    z-index: 1001;
+  }
+
+  .app-shell__topbar-inner .burger span {
+    display: block;
+    width: 100%;
+    height: 2px;
+    background-color: var(--c-text);
+    transition: all 0.3s ease;
+    border-radius: 9px;
+  }
+
+  .app-shell__topbar-inner .burger span.open:nth-child(1) {
+    transform: translateY(8px) rotate(45deg);
+  }
+  .app-shell__topbar-inner .burger span.open:nth-child(2) {
+    opacity: 0;
+  }
+  .app-shell__topbar-inner .burger span.open:nth-child(3) {
+    transform: translateY(-8px) rotate(-45deg);
+  }
+
+  .app-shell__menu-wrapper {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 32px;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100vh;
+    background: rgba(5, 5, 5, 0.96);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    z-index: 1000;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(-20px);
+    transition: all 0.4s var(--c-transition);
+  }
+
+  .app-shell__menu-wrapper.is-open {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0);
   }
 
   .app-shell__nav {
-    justify-content: center;
-    overflow-x: auto;
-    white-space: nowrap;
-    padding-bottom: 4px;
+    flex-direction: column;
+    gap: 20px;
+    width: 100%;
   }
 
   .app-shell__navlink {
-    padding: 8px 12px;
-    font-size: 11px;
-    min-height: 36px;
+    padding: 10px 24px;
+    font-size: 16px;
+    min-height: 44px;
   }
 
   .app-shell__actions {
+    flex-direction: column;
+    width: 80%;
+    max-width: 300px;
+    gap: 16px;
     justify-content: center;
+    align-items: center;
+  }
+
+  .app-shell__actions .app-shell__button {
     width: 100%;
+    min-height: 48px;
+    font-size: 14px;
+    justify-content: center;
   }
 
   .app-shell__metric-grid {
